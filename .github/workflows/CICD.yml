@@ -229,7 +229,7 @@ jobs:
         popd >/dev/null
     - name: Debian package
       shell: bash
-      if: contains('linux', matrix.job.target)
+      if: contains(matrix.job.target, 'linux')
       run: |
         COPYRIGHT_YEARS="2018 - "$(date "+%Y")
         DPKG_DIR="${{ steps.vars.outputs.STAGING }}/dpkg"
