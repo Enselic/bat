@@ -201,7 +201,7 @@ jobs:
         PKG_NAME=${PKG_BASENAME}${PKG_suffix}
         echo ::set-output name=PKG_NAME::${PKG_NAME}
 
-        ARCHIVE_DIR='${{ steps.vars.outputs.STAGING }}/${{ steps.vars.outputs.PKG_BASENAME }}/'
+        ARCHIVE_DIR="${{ steps.vars.outputs.STAGING }}/${PKG_BASENAME}/"
         mkdir -p "${ARCHIVE_DIR}"
         mkdir -p "${ARCHIVE_DIR}/autocomplete"
         # Binary
@@ -223,8 +223,8 @@ jobs:
         # base compressed package
         pushd '${{ steps.vars.outputs.STAGING }}/' >/dev/null
         case ${{ matrix.job.target }} in
-          *-pc-windows-*) 7z -y a '${{ steps.vars.outputs.PKG_NAME }}' '${{ steps.vars.outputs.PKG_BASENAME }}'/* | tail -2 ;;
-          *) tar czf '${{ steps.vars.outputs.PKG_NAME }}' '${{ steps.vars.outputs.PKG_BASENAME }}'/* ;;
+          *-pc-windows-*) 7z -y a "${PKG_NAME}" "${PKG_BASENAME}"/* | tail -2 ;;
+          *) tar czf "${PKG_NAME}" "${PKG_BASENAME}"/* ;;
         esac;
         popd >/dev/null
     - name: Debian package
@@ -263,13 +263,13 @@ jobs:
         install -Dm644 'target/${{ matrix.job.target }}/release/build/${{ env.PROJECT_NAME }}'-*/out/assets/completions/bat.zsh "${DPKG_DIR}/usr/share/zsh/vendor-completions/_${{ env.PROJECT_NAME }}"
 
         # README and LICENSE
-        install -Dm644 "README.md" "${DPKG_DIR}/usr/share/doc/${{ steps.vars.outputs.DPKG_BASENAME }}/README.md"
-        install -Dm644 "LICENSE-MIT" "${DPKG_DIR}/usr/share/doc/${{ steps.vars.outputs.DPKG_BASENAME }}/LICENSE-MIT"
-        install -Dm644 "LICENSE-APACHE" "${DPKG_DIR}/usr/share/doc/${{ steps.vars.outputs.DPKG_BASENAME }}/LICENSE-APACHE"
-        install -Dm644 "CHANGELOG.md" "${DPKG_DIR}/usr/share/doc/${{ steps.vars.outputs.DPKG_BASENAME }}/changelog"
-        gzip -n --best "${DPKG_DIR}/usr/share/doc/${{ steps.vars.outputs.DPKG_BASENAME }}/changelog"
+        install -Dm644 "README.md" "${DPKG_DIR}/usr/share/doc/${DPKG_BASENAME}/README.md"
+        install -Dm644 "LICENSE-MIT" "${DPKG_DIR}/usr/share/doc/${DPKG_BASENAME}/LICENSE-MIT"
+        install -Dm644 "LICENSE-APACHE" "${DPKG_DIR}/usr/share/doc/${DPKG_BASENAME}/LICENSE-APACHE"
+        install -Dm644 "CHANGELOG.md" "${DPKG_DIR}/usr/share/doc/${DPKG_BASENAME}/changelog"
+        gzip -n --best "${DPKG_DIR}/usr/share/doc/${DPKG_BASENAME}/changelog"
 
-        cat > "${DPKG_DIR}/usr/share/doc/${{ steps.vars.outputs.DPKG_BASENAME }}/copyright" <<EOF
+        cat > "${DPKG_DIR}/usr/share/doc/${DPKG_BASENAME}/copyright" <<EOF
         Format: http://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
         Upstream-Name: ${{ env.PROJECT_NAME }}
         Source: ${{ env.PROJECT_HOMEPAGE }}
@@ -308,26 +308,26 @@ jobs:
           IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
           DEALINGS IN THE SOFTWARE.
         EOF
-          chmod 644 "${DPKG_DIR}/usr/share/doc/${{ steps.vars.outputs.DPKG_BASENAME }}/copyright"
+          chmod 644 "${DPKG_DIR}/usr/share/doc/${DPKG_BASENAME}/copyright"
 
           # control file
           mkdir -p "${DPKG_DIR}/DEBIAN"
           cat > "${DPKG_DIR}/DEBIAN/control" <<EOF
-        Package: ${{ steps.vars.outputs.DPKG_BASENAME }}
-        Version: ${{ steps.vars.outputs.DPKG_VERSION }}
+        Package: ${DPKG_BASENAME}
+        Version: ${DPKG_VERSION}
         Section: utils
         Priority: optional
-        Maintainer: ${{ env.PROJECT_MAINTAINER }}
+        Maintainer: ${PROJECT_MAINTAINER}
         Homepage: ${{ env.PROJECT_HOMEPAGE }}
-        Architecture: ${{ steps.vars.outputs.DPKG_ARCH }}
+        Architecture: ${DPKG_ARCH}
         Provides: ${{ env.PROJECT_NAME }}
-        Conflicts: ${{ steps.vars.outputs.DPKG_CONFLICTS }}
+        Conflicts: ${DPKG_CONFLICTS}
         Description: cat(1) clone with wings.
           A cat(1) clone with syntax highlighting and Git integration.
         EOF
 
         # build dpkg
-        fakeroot dpkg-deb --build "${DPKG_DIR}" "${{ steps.vars.outputs.STAGING }}/${{ steps.vars.outputs.DPKG_NAME }}"
+        fakeroot dpkg-deb --build "${DPKG_DIR}" "${{ steps.vars.outputs.STAGING }}/${DPKG_NAME}"
     - name: Upload package artifact
       uses: actions/upload-artifact@master
       with:
