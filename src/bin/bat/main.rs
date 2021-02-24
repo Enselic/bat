@@ -252,7 +252,7 @@ fn run() -> Result<bool> {
                 "NO_COLOR",
                 "MANPAGER",
             ]))
-            .info(FileContent::new("Config file", config_file()))
+            .info(FileContent::new("Config file", config_file(true)))
             .info(CompileTimeInformation::default())
             .info(CommandOutput::new("Less version", pager, &["--version"]))
             .print::<Markdown>();
@@ -292,7 +292,7 @@ fn run() -> Result<bool> {
                 list_themes(&config)?;
                 Ok(true)
             } else if app.matches.is_present("config-file") {
-                println!("{}", config_file().to_string_lossy());
+                println!("{}", config_file(true).to_string_lossy());
                 Ok(true)
             } else if app.matches.is_present("generate-config-file") {
                 generate_config_file()?;

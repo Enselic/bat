@@ -6,16 +6,16 @@ use std::path::PathBuf;
 
 use crate::directories::PROJECT_DIRS;
 
-pub fn config_file() -> PathBuf {
+pub fn config_file(must_exist_when_from_env_var: bool) -> PathBuf {
     env::var("BAT_CONFIG_PATH")
         .ok()
         .map(PathBuf::from)
-        .filter(|config_path| config_path.is_file())
+        .filter(|config_path| !must_exist_when_from_env_var || config_path.is_file())
         .unwrap_or_else(|| PROJECT_DIRS.config_dir().join("config"))
 }
 
 pub fn generate_config_file() -> bat::error::Result<()> {
-    let config_file = config_file();
+    let config_file = config_file(false);
     if config_file.exists() {
         println!(
             "A config file already exists at: {}",
@@ -81,7 +81,7 @@ pub fn generate_config_file() -> bat::error::Result<()> {
 }
 
 pub fn get_args_from_config_file() -> Result<Vec<OsString>, shell_words::ParseError> {
-    Ok(fs::read_to_string(config_file())
+    Ok(fs::read_to_string(config_file(true))
         .ok()
         .map(|content| get_args_from_str(&content))
         .transpose()?
