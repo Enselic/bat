@@ -270,16 +270,17 @@ impl HighlightingAssets {
     }
 
     fn get_extension_syntax(&self, file_name: &OsStr) -> Option<&SyntaxReference> {
-        self.syntax_set
-            .find_syntax_by_extension(file_name.to_str().unwrap_or_default())
-            .or_else(|| {
-                self.syntax_set.find_syntax_by_extension(
-                    Path::new(file_name)
-                        .extension()
-                        .and_then(|x| x.to_str())
-                        .unwrap_or_default(),
-                )
-            })
+        // file_name can be e.g. '.bashrc' in which case .extension() will
+        // return the empty string, so we need to check both variants
+        let extensions = vec![
+            file_name,
+            Path::new(file_name).extension().unwrap_or_default(),
+        ];
+
+        extensions.iter().find_map(|ext| {
+            self.syntax_set
+                .find_syntax_by_extension(ext.to_str().unwrap_or_default())
+        })
     }
 
     fn get_first_line_syntax(&self, reader: &mut InputReader) -> Option<&SyntaxReference> {
