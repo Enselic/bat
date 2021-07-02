@@ -72,6 +72,8 @@ impl HighlightingAssets {
             );
         }
 
+        syntax_set_builder.clone().build_disjoint();
+
         Ok(HighlightingAssets {
             syntax_set: syntax_set_builder.build(),
             theme_set,
