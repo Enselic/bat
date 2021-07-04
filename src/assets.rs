@@ -120,7 +120,7 @@ impl HighlightingAssets {
         from_binary(include_bytes!("../assets/themes.bin"))
     }
 
-    pub fn from_binary(inputs: &[crate::input::Input]) -> Self {
+    pub fn from_binary() -> Self {
         let syntax_set = Self::get_integrated_syntaxset();
         let theme_set = Self::get_integrated_themeset();
 
