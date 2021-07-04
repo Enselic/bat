@@ -72,7 +72,19 @@ impl HighlightingAssets {
             );
         }
 
-        build_disjoint(&syntax_set_builder);
+        let syntax_sets = build_disjoint(&syntax_set_builder);
+
+        eprintln!("");
+        eprintln!("");
+        eprintln!("");
+        eprintln!("The following disjoint sets were built:");
+
+        for syntax_set in syntax_sets {
+            eprintln!("");
+            for syntax in syntax_set.syntaxes() {
+                eprintln!("{}", syntax.name);
+            }
+        }
 
         Ok(HighlightingAssets {
             syntax_set: syntax_set_builder.build(),
