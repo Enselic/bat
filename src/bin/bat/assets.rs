@@ -35,7 +35,7 @@ pub fn clear_assets() {
     println!("okay");
 }
 
-pub fn assets_from_cache_or_binary() -> Result<HighlightingAssets> {
+pub fn assets_from_cache_or_binary(inputs: &[bat::input::Input]) -> Result<HighlightingAssets> {
     let cache_dir = PROJECT_DIRS.cache_dir();
     if let Some(metadata) = AssetsMetadata::load_from_folder(&cache_dir)? {
         if !metadata.is_compatible_with(crate_version!()) {
@@ -53,6 +53,7 @@ pub fn assets_from_cache_or_binary() -> Result<HighlightingAssets> {
         }
     }
 
-    Ok(HighlightingAssets::from_cache(&cache_dir)
-        .unwrap_or_else(|_| HighlightingAssets::from_binary()))
+    // Ok(HighlightingAssets::from_cache(&cache_dir)
+    //     .unwrap_or_else(|_| HighlightingAssets::from_binary()))
+    Ok(HighlightingAssets::from_binary(inputs))
 }
