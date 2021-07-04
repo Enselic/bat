@@ -110,16 +110,29 @@ impl HighlightingAssets {
         })
     }
 
-    fn get_integrated_syntaxset(inputs: &[crate::input::Input]) -> SyntaxSet {
+    /// Contains *all* syntaxes, which you probably don't need
+    fn get_integrated_syntaxset() -> SyntaxSet {
         from_binary(include_bytes!("../assets/syntaxes.bin"))
     }
 
+    /// Contains *all* themes, which you probably don't need
     fn get_integrated_themeset() -> ThemeSet {
         from_binary(include_bytes!("../assets/themes.bin"))
     }
 
     pub fn from_binary(inputs: &[crate::input::Input]) -> Self {
-        let syntax_set = Self::get_integrated_syntaxset(inputs);
+        let syntax_set = Self::get_integrated_syntaxset();
+        let theme_set = Self::get_integrated_themeset();
+
+        HighlightingAssets {
+            syntax_set,
+            theme_set,
+            fallback_theme: None,
+        }
+    }
+
+    pub fn from_binary_for_input(input: &crate::input::Input) -> Self {
+        let syntax_set = Self::get_integrated_syntaxset();
         let theme_set = Self::get_integrated_themeset();
 
         HighlightingAssets {
