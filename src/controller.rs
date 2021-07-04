@@ -18,6 +18,7 @@ use clircle::Clircle;
 
 pub struct Controller<'a> {
     config: &'a Config<'a>,
+    // TODO: Introduce a proper per-input API
     assets: &'a HighlightingAssets,
 }
 
@@ -31,6 +32,14 @@ impl<'b> Controller<'b> {
     }
 
     pub fn run_with_error_handler(
+        &self,
+        inputs: Vec<Input>,
+        handle_error: impl Fn(&Error, &mut dyn Write),
+    ) -> Result<bool> {
+
+    }
+
+    pub fn run_with_error_handler_and_assets(
         &self,
         inputs: Vec<Input>,
         handle_error: impl Fn(&Error, &mut dyn Write),

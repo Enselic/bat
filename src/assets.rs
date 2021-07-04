@@ -20,7 +20,7 @@ use crate::syntax_mapping::{MappingTarget, SyntaxMapping};
 pub struct HighlightingAssets {
     pub(crate) syntax_set: SyntaxSet,
     pub(crate) theme_set: ThemeSet,
-    fallback_theme: Option<&'static str>,
+    pub(crate) fallback_theme: Option<&'static str>,
 }
 
 impl HighlightingAssets {

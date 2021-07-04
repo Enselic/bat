@@ -216,9 +216,22 @@ pub fn list_themes(cfg: &Config) -> Result<()> {
 }
 
 fn run_controller(inputs: Vec<Input>, config: &Config) -> Result<bool> {
-    let assets = assets_from_cache_or_binary(&inputs)?;
-    let controller = Controller::new(&config, &assets);
-    controller.run(inputs)
+    // For good startup performance, we only want to load the necesary
+    // assets for a given input. So we load one set of assets for
+    // each input
+    let assets = Vec::with_capacity(inputs.len());
+    for input in inputs {
+        let asset = assets_from_cache_or_binary(&input)?;
+        assets.push(asset);
+    }
+
+    let dummy_assets = HighlightingAssets {
+        syntax_set: syntect::parsing::SyntaxSet::default(),
+        theme_set: syntect::highlighting::ThemeSet::default(),
+        fallback_theme: None,
+    };
+    let controller = Controller::new(&config, &dummy_assets);
+    controller.run(inputs, &assets)
 }
 
 /// Returns `Err(..)` upon fatal errors. Otherwise, returns `Ok(true)` on full success and
