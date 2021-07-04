@@ -18,9 +18,9 @@ use crate::syntax_mapping::{MappingTarget, SyntaxMapping};
 
 #[derive(Debug)]
 pub struct HighlightingAssets {
-    pub(crate) syntax_set: SyntaxSet,
-    pub(crate) theme_set: ThemeSet,
-    pub(crate) fallback_theme: Option<&'static str>,
+    pub syntax_set: SyntaxSet,
+    pub theme_set: ThemeSet,
+    pub fallback_theme: Option<&'static str>,
 }
 
 impl HighlightingAssets {
