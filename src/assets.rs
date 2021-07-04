@@ -72,7 +72,7 @@ impl HighlightingAssets {
             );
         }
 
-        syntax_set_builder.clone().build_disjoint();
+        build_disjoint(&syntax_set_builder);
 
         Ok(HighlightingAssets {
             syntax_set: syntax_set_builder.build(),
@@ -551,6 +551,15 @@ mod tests {
     }
 }
 
+use std::collections::HashMap;
+use std::collections::HashSet;
+use syntect::parsing::syntax_definition::{
+    ContextReference,
+    SyntaxDefinition,
+    MatchOperation,
+    Pattern,
+};
+
 #[derive(Clone)]
 struct SyntaxDefinitionWithDeps {
     syntax_definition: SyntaxDefinition,
@@ -633,7 +642,7 @@ fn handle_context_reference(
 pub fn build_disjoint(syntax_set_builder: &SyntaxSetBuilder) -> Vec<SyntaxSet> {
     let mut result = vec![];
 
-    let mut syntax_defs_with_deps = syntax_set_builder.syntaxes.iter().map(|syntax_definition| {
+    let mut syntax_defs_with_deps = syntax_set_builder.syntaxes().iter().map(|syntax_definition| {
         SyntaxDefinitionWithDeps {
             syntax_definition: syntax_definition.clone(),
             deps: vec![],
