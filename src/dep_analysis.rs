@@ -1,3 +1,9 @@
+/*  To exercise this code, run this:
+
+  cargo run -- cache --build --source assets --blank --target assets | tee /tmp/out.txt
+
+*/
+
 use std::collections::HashSet;
 use syntect::parsing::syntax_definition::{
     ContextReference,
