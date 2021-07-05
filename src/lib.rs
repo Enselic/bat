@@ -26,6 +26,7 @@ pub mod assets_metadata;
 pub mod config;
 pub mod controller;
 mod decorations;
+mod dep_analysis;
 mod diff;
 pub mod error;
 pub mod input;
