@@ -1,4 +1,3 @@
-use std::collections::HashMap;
 use std::collections::HashSet;
 use syntect::parsing::syntax_definition::{
     ContextReference,
@@ -21,8 +20,10 @@ struct SyntaxDefinitionWithDeps {
 // TODO: Use references instead of copies
 fn construct_direct_dependency_map(
     syntax_defs_with_deps: &mut [SyntaxDefinitionWithDeps],
-) -> HashMap<ContextReference, SyntaxDefinitionWithDeps> {
-    let mut context_ref_to_syntax_def: HashMap<ContextReference, SyntaxDefinitionWithDeps> = HashMap::new();
+) -> Vec<(ContextReference, SyntaxDefinitionWithDeps)> {
+    // This can be a HashMap<ContextReference, SyntaxDefinitionWithDeps>
+    // when/if ContextReference starts deriving from Hash
+    let mut context_ref_to_syntax_def: Vec<(ContextReference, SyntaxDefinitionWithDeps)> = vec![]; // HashMap::new();
 
     for syntax_def_with_deps in syntax_defs_with_deps {
         let SyntaxDefinition {
@@ -55,15 +56,15 @@ fn construct_direct_dependency_map(
         }
 
         // TODO: Use references instead of clones
-        context_ref_to_syntax_def.insert(
+        context_ref_to_syntax_def.push((
             ContextReference::File { name: name.clone(), sub_context: None },
             syntax_def_with_deps.clone(),
-        );
+        ));
 
-        context_ref_to_syntax_def.insert(
+        context_ref_to_syntax_def.push((
             ContextReference::ByScope { scope: *scope, sub_context: None },
             syntax_def_with_deps.clone(),
-        );
+        ));
     }
 
     context_ref_to_syntax_def
@@ -120,18 +121,21 @@ pub fn build_disjoint(syntax_set_builder: &SyntaxSetBuilder) -> Vec<SyntaxSet> {
         while deps_left.len() > 0 {
             let dep = deps_left.pop().unwrap();
 
-            let syntax_for_dep = context_ref_to_syntax_def.get(&dep);
+            let syntax_for_dep = context_ref_to_syntax_def.iter().find(|x| x.0 == dep);
             match syntax_for_dep {
                 Some(syntax_for_dep) => {
-                    if added_names.contains(&syntax_for_dep.syntax_definition.name) {
-                        eprintln!("    not adding {}, already added", syntax_for_dep.syntax_definition.name);
+                    let syntax_definitiom_with_deps = &syntax_for_dep.1;
+                    let syntax_definition = &syntax_definitiom_with_deps.syntax_definition;
+                    let deps = &syntax_definitiom_with_deps.deps;
+                    if added_names.contains(&syntax_definition.name) {
+                        eprintln!("    not adding {}, already added", syntax_definition.name);
                     } else {
-                        eprintln!("    adding {} to SyntaxSetBuilder", syntax_for_dep.syntax_definition.name);
-                        builder.add(syntax_for_dep.syntax_definition.clone());
-                        for  dep in &syntax_for_dep.deps {
+                        eprintln!("    adding {} to SyntaxSetBuilder", syntax_definition.name);
+                        builder.add(syntax_definition.clone());
+                        for dep in deps {
                             deps_left.push(dep.clone());
                         }
-                        added_names.insert(syntax_for_dep.syntax_definition.name.clone());
+                        added_names.insert(syntax_definition.name.clone());
                     }
                 },
                 None => {
