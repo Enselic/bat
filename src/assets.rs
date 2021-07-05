@@ -4,7 +4,7 @@ use std::fs::{self, File};
 use std::io::BufReader;
 use std::path::Path;
 
-use syntect::dumps::{dump_to_file, from_binary, from_reader};
+use syntect::dumps::{dump_binary, dump_to_file, from_binary, from_reader};
 use syntect::highlighting::{Theme, ThemeSet};
 use syntect::parsing::{SyntaxReference, SyntaxSet, SyntaxSetBuilder};
 
@@ -21,6 +21,11 @@ pub struct HighlightingAssets {
     pub syntax_set: SyntaxSet,
     pub theme_set: ThemeSet,
     pub fallback_theme: Option<&'static str>,
+}
+
+struct OffsetAndSize {
+    offset: usize,
+    size: usize,
 }
 
 impl HighlightingAssets {
@@ -79,11 +84,32 @@ impl HighlightingAssets {
         eprintln!("");
         eprintln!("The following disjoint sets were built:");
 
+        let mut data: Vec<u8> = vec![];
+
+        let mut offset = 0;
+
+        let mut extension_to_syntax_set = HashMap::<String, OffsetAndSize>();
+
         for syntax_set in syntax_sets {
             eprintln!("");
+
+            let syntax_set_bin = dump_binary(&syntax_set);
+            let size = syntax_set_bin.len();
+
+            let offset_and_size = OffsetAndSize {
+                offset,
+                size
+            };
+
+            let mut names = vec![];
+            let mut file_extensions = vec![];
+
             for syntax in syntax_set.syntaxes() {
-                eprintln!("{}", syntax.name);
+                names.push(syntax.name);
+                file_extensions.extend(syntax.file_extensions);
             }
+
+            offset += size;
         }
 
         Ok(HighlightingAssets {
