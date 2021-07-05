@@ -1091,6 +1091,7 @@ dependencies = [
 [[package]]
 name = "syntect"
 version = "4.5.0"
+source = "git+https://github.com/trishume/syntect.git?branch=master#6bcec62afa5a15b349cda7a5ba67d2eab51115f3"
 dependencies = [
  "bincode",
  "bitflags",

@@ -58,7 +58,8 @@ optional = true
 default-features = false
 
 [dependencies.syntect]
-path = "/home/martin/src/syntect"
+git = "https://github.com/trishume/syntect.git"
+branch = "master"
 default-features = false
 features = ["parsing", "yaml-load", "dump-load", "dump-create"]
 
