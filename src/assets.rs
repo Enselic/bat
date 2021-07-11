@@ -19,6 +19,10 @@ use crate::syntax_mapping::{MappingTarget, SyntaxMapping};
 
 #[derive(Debug)]
 pub struct HighlightingAssets {
+    // TODO: Rename 'disjoint' to 'independent' everywhere, or 'self-contained', or 'minimal'
+    /// Many small and independent syntax sets
+    pub disjoint_syntax_sets: Option<Vec<SyntaxSet>>,
+    /// One giant syntax set to rule them all
     pub syntax_set: SyntaxSet,
     pub theme_set: ThemeSet,
     pub fallback_theme: Option<&'static str>,
@@ -26,7 +30,6 @@ pub struct HighlightingAssets {
 
 // Offset into a binary blob where the start of a syntax set can be found
 // Size is the size.
-
 #[derive(Debug, Clone, Copy)]
 struct OffsetAndSize {
     offset: u64,
@@ -134,6 +137,7 @@ impl HighlightingAssets {
         }
 
         Ok(HighlightingAssets {
+            disjoint_syntax_sets: Some(syntax_sets),
             syntax_set: syntax_set_builder.build(),
             theme_set,
             fallback_theme: None,
