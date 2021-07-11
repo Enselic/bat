@@ -28,6 +28,11 @@ struct OffsetAndSize {
     size: usize,
 }
 
+pub SyntaxSetLookupTable {
+    lookup_by_name: HashMap<String, OffsetAndSize>,
+    lookup_by_ext: HashMap<String, OffsetAndSize>,
+}
+
 impl HighlightingAssets {
     pub fn default_theme() -> &'static str {
         "Monokai Extended"
@@ -93,14 +98,20 @@ impl HighlightingAssets {
         for syntax_set in syntax_sets {
             eprintln!("");
 
+            // bincode this syntax set
             let syntax_set_bin = dump_binary(&syntax_set);
             let size = syntax_set_bin.len();
 
+            // Remember where in the binary blob we can find it when we need it again
             let offset_and_size = OffsetAndSize {
                 offset,
                 size
             };
 
+            // Append the binary blob with the data
+            data.extend(syntax_set_bin);
+
+            // Map all file extensions to the offset and size that we just stored
             let mut names = vec![];
             let mut file_extensions = vec![];
 
