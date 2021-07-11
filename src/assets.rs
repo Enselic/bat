@@ -124,7 +124,7 @@ impl HighlightingAssets {
             for syntax in syntax_set.syntaxes() {
                 lookup_table.lookup_by_name.insert(syntax.name.clone(), offset_and_size);
 
-                for ext in syntax.file_extensions {
+                for ext in &syntax.file_extensions {
                     lookup_table.lookup_by_ext.insert(ext, offset_and_size);
                 }
             }
