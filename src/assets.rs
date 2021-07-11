@@ -1,4 +1,5 @@
 use std::collections::BTreeMap;
+use std::collections::HashMap;
 use std::ffi::OsStr;
 use std::fs::{self, File};
 use std::io::BufReader;
@@ -25,12 +26,14 @@ pub struct HighlightingAssets {
 
 // Offset into a binary blob where the start of a syntax set can be found
 // Size is the size.
+
+#[derive(Debug, Clone, Copy)]
 struct OffsetAndSize {
     offset: u64,
     size: u64,
 }
 
-pub SyntaxSetLookupTable {
+pub struct SyntaxSetLookupTable {
     lookup_by_name: HashMap<String, OffsetAndSize>,
     lookup_by_ext: HashMap<String, OffsetAndSize>,
 }
@@ -99,16 +102,14 @@ impl HighlightingAssets {
         let mut lookup_table = SyntaxSetLookupTable {
             lookup_by_name: HashMap::new(),
             lookup_by_ext: HashMap::new(),
-        }
-
-        let mut extension_to_syntax_set = HashMap::<String, OffsetAndSize>();
+        };
 
         for syntax_set in syntax_sets {
             eprintln!("");
 
             // bincode this syntax set
             let syntax_set_bin = dump_binary(&syntax_set);
-            let size = syntax_set_bin.len();
+            let size = syntax_set_bin.len() as u64;
 
             // Remember where in the binary blob we can find it when we need it again
             let offset_and_size = OffsetAndSize {
@@ -121,7 +122,7 @@ impl HighlightingAssets {
 
             // Map all file extensions to the offset and size that we just stored
             for syntax in syntax_set.syntaxes() {
-                lookup_table.lookup_by_name.insert(syntax.name, offset_and_size);
+                lookup_table.lookup_by_name.insert(syntax.name.clone(), offset_and_size);
 
                 for ext in syntax.file_extensions {
                     lookup_table.lookup_by_ext.insert(ext, offset_and_size);
