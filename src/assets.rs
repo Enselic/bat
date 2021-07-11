@@ -23,9 +23,11 @@ pub struct HighlightingAssets {
     pub fallback_theme: Option<&'static str>,
 }
 
+// Offset into a binary blob where the start of a syntax set can be found
+// Size is the size.
 struct OffsetAndSize {
-    offset: usize,
-    size: usize,
+    offset: u64,
+    size: u64,
 }
 
 pub SyntaxSetLookupTable {
@@ -93,6 +95,12 @@ impl HighlightingAssets {
 
         let mut offset = 0;
 
+
+        let mut lookup_table = SyntaxSetLookupTable {
+            lookup_by_name: HashMap::new(),
+            lookup_by_ext: HashMap::new(),
+        }
+
         let mut extension_to_syntax_set = HashMap::<String, OffsetAndSize>();
 
         for syntax_set in syntax_sets {
@@ -112,14 +120,15 @@ impl HighlightingAssets {
             data.extend(syntax_set_bin);
 
             // Map all file extensions to the offset and size that we just stored
-            let mut names = vec![];
-            let mut file_extensions = vec![];
-
             for syntax in syntax_set.syntaxes() {
-                names.push(syntax.name);
-                file_extensions.extend(syntax.file_extensions);
+                lookup_table.lookup_by_name.insert(syntax.name, offset_and_size);
+
+                for ext in syntax.file_extensions {
+                    lookup_table.lookup_by_ext.insert(ext, offset_and_size);
+                }
             }
 
+            // Update offset for next syntax set
             offset += size;
         }
 
