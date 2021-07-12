@@ -46,7 +46,7 @@ impl HighlightingAssets {
         "Monokai Extended"
     }
 
-    pub fn from_files(source_dir: &Path, include_integrated_assets: bool) -> Result<Self> {
+    pub fn from_files2(source_dir: &Path, include_integrated_assets: bool) -> Result<Self> {
         let mut theme_set = if include_integrated_assets {
             Self::get_integrated_themeset()
         } else {

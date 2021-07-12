@@ -52,6 +52,7 @@ fn run_cache_subcommand(matches: &clap::ArgMatches) -> Result<()> {
 
         let blank = matches.is_present("blank");
 
+        // TODO: Should not return HighlightingAssets
         let assets = HighlightingAssets::from_files(source_dir, !blank)?;
         assets.save_to_cache(target_dir, crate_version!())?;
     } else if matches.is_present("clear") {

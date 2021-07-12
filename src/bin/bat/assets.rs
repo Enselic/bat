@@ -20,6 +20,8 @@ pub fn cache_dir() -> Cow<'static, str> {
 pub fn clear_assets() {
     let theme_set_path = PROJECT_DIRS.cache_dir().join("themes.bin");
     let syntax_set_path = PROJECT_DIRS.cache_dir().join("syntaxes.bin");
+    let lookup_path = PROJECT_DIRS.cache_dir().join("lookup.bin");
+    let lookup_path = PROJECT_DIRS.cache_dir().join("independentsyntaxes.bin");
     let metadata_file = PROJECT_DIRS.cache_dir().join("metadata.yaml");
 
     print!("Clearing theme set cache ... ");
