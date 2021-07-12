@@ -173,14 +173,20 @@ impl HighlightingAssets {
         })
     }
 
-    /// Contains *all* syntaxes, which you probably don't need
     fn get_integrated_syntaxset() -> SyntaxSet {
         from_binary(include_bytes!("../assets/syntaxes.bin"))
     }
 
-    /// Contains *all* themes, which you probably don't need
     fn get_integrated_themeset() -> ThemeSet {
         from_binary(include_bytes!("../assets/themes.bin"))
+    }
+
+    fn get_integrated_lookup() -> ThemeSet {
+        from_binary(include_bytes!("../assets/lookup.bin"))
+    }
+
+    fn get_integrated_independent_syntaxes() -> &'static [u8] {
+        include_bytes!("../assets/independent_syntaxes.bin")
     }
 
     pub fn from_binary() -> Self {
@@ -209,7 +215,10 @@ impl HighlightingAssets {
         let _ = fs::create_dir_all(target_dir);
         let theme_set_path = target_dir.join("themes.bin");
         let syntax_set_path = target_dir.join("syntaxes.bin");
-
+        let lookup_path = target_dir.join("lookup.bin");
+        let independent_syntaxes_path = target_dir.join("independent_syntaxes.bin");
+        // TODO: metadata for the above
+    
         print!(
             "Writing theme set to {} ... ",
             theme_set_path.to_string_lossy()
