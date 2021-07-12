@@ -21,27 +21,7 @@ use crate::syntax_mapping::{MappingTarget, SyntaxMapping};
 pub struct HighlightingAssets {
     pub syntax_set: SyntaxSet,
     pub theme_set: ThemeSet,
-
-    pub lookup: SyntaxSetLookupTable,
-
-    /// Many small and independent syntax sets
-    pub independent_syntaxes: Option<&'static [u8]>,
-
     pub fallback_theme: Option<&'static str>,
-}
-
-// Offset into a binary blob where the start of a syntax set can be found
-// Size is the size.
-#[derive(Debug, Clone, Copy)]
-struct OffsetAndSize {
-    offset: u64,
-    size: u64,
-}
-
-#[derive(Debug)]
-pub struct SyntaxSetLookupTable {
-    lookup_by_name: HashMap<String, OffsetAndSize>,
-    lookup_by_ext: HashMap<String, OffsetAndSize>,
 }
 
 impl HighlightingAssets {
@@ -49,8 +29,12 @@ impl HighlightingAssets {
         "Monokai Extended"
     }
 
-    pub fn from_files2(source_dir: &Path, include_integrated_assets: bool) -> Result<Self> {
-        let mut theme_set = if include_integrated_assets {
+    pub fn from_files(source_dir: &Path, include_integrated_assets: bool) -> Result<Self> {
+
+    }
+
+    pub fn from_files_plus_independent(source_dir: &Path, include_integrated_assets: bool) -> Result<super::dep_analysis::ExtendedHighlightingAssets> {
+            let mut theme_set = if include_integrated_assets {
             Self::get_integrated_themeset()
         } else {
             ThemeSet {
@@ -140,7 +124,6 @@ impl HighlightingAssets {
         }
 
         Ok(HighlightingAssets {
-            independent_syntaxes: Some(syntax_sets),
             syntax_set: syntax_set_builder.build(),
             theme_set,
             fallback_theme: None,

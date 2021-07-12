@@ -4,7 +4,10 @@
 
 */
 
-use std::collections::HashSet;
+use std::collections::{
+    HashSet,
+    HashMap,
+};
 use syntect::parsing::syntax_definition::{
     ContextReference,
     SyntaxDefinition,
@@ -15,6 +18,32 @@ use syntect::parsing::{
     SyntaxSet,
     SyntaxSetBuilder,
 };
+
+use crate::assets::HighlightingAssets;
+
+/// TODO: Better name
+pub struct ExtendedHighlightingAssets {
+    pub assets: HighlightingAssets,
+    pub lookup: SyntaxSetLookupTable,
+    pub independent_syntaxes: Option<&'static [u8]>,
+}
+
+
+// Offset into a binary blob where the start of a syntax set can be found
+// Size is the size.
+#[derive(Debug, Clone, Copy)]
+struct OffsetAndSize {
+    offset: u64,
+    size: u64,
+}
+
+#[derive(Debug)]
+pub struct SyntaxSetLookupTable {
+    lookup_by_name: HashMap<String, OffsetAndSize>,
+    lookup_by_ext: HashMap<String, OffsetAndSize>,
+}
+
+
 
 #[derive(Clone)]
 struct SyntaxDefinitionWithDeps {
