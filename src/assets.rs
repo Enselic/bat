@@ -19,12 +19,14 @@ use crate::syntax_mapping::{MappingTarget, SyntaxMapping};
 
 #[derive(Debug)]
 pub struct HighlightingAssets {
-    // TODO: Rename 'disjoint' to 'independent' everywhere, or 'self-contained', or 'minimal'
-    /// Many small and independent syntax sets
-    pub disjoint_syntax_sets: Option<Vec<SyntaxSet>>,
-    /// One giant syntax set to rule them all
     pub syntax_set: SyntaxSet,
     pub theme_set: ThemeSet,
+
+    pub lookup: SyntaxSetLookupTable,
+
+    /// Many small and independent syntax sets
+    pub independent_syntaxes: Option<&'static [u8]>,
+
     pub fallback_theme: Option<&'static str>,
 }
 
@@ -36,6 +38,7 @@ struct OffsetAndSize {
     size: u64,
 }
 
+#[derive(Debug)]
 pub struct SyntaxSetLookupTable {
     lookup_by_name: HashMap<String, OffsetAndSize>,
     lookup_by_ext: HashMap<String, OffsetAndSize>,
@@ -147,6 +150,7 @@ impl HighlightingAssets {
     pub fn from_cache(cache_path: &Path) -> Result<Self> {
         let syntax_set_path = cache_path.join("syntaxes.bin");
         let theme_set_path = cache_path.join("themes.bin");
+        // TODO
 
         let syntax_set_file = File::open(&syntax_set_path).chain_err(|| {
             format!(
