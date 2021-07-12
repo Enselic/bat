@@ -211,6 +211,11 @@ impl HighlightingAssets {
     pub fn from_binary_for_input(input: &crate::input::Input) -> Self {
         let syntax_set = Self::get_integrated_syntaxset();
         let theme_set = Self::get_integrated_themeset();
+        let lookup = Self::get_integrated_lookup();
+
+        if let super::input::InputKind::OrdinaryFile(ref pathbuf) = input.kind {
+
+        }
 
         HighlightingAssets {
             syntax_set,
