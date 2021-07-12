@@ -244,6 +244,30 @@ impl HighlightingAssets {
         println!("okay");
 
         print!(
+            "Writing lookup set to {} ... ",
+            lookup_path.to_string_lossy()
+        );
+        dump_to_file(&self.lookup, &lookup_path).chain_err(|| {
+            format!(
+                "Could not save syntax set to {}",
+                lookup_path.to_string_lossy()
+            )
+        })?;
+        println!("okay");
+
+        print!(
+            "Writing indepedndent syntaxes set to {} ... ",
+            independent_syntaxes_path.to_string_lossy()
+        );
+        dump_to_file(&self.indepdent_syntaxes, &independent_syntaxes_path).chain_err(|| {
+            format!(
+                "Could not save indepedndent syntaxes to {}",
+                independent_syntaxes_path.to_string_lossy()
+            )
+        })?;
+        println!("okay");
+
+        print!(
             "Writing metadata to folder {} ... ",
             target_dir.to_string_lossy()
         );
