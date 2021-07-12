@@ -77,24 +77,24 @@ impl HighlightingAssets {
             );
         }
 
-        let syntax_sets = super::dep_analysis::build_independent(&syntax_set_builder);
+        let independent_syntaxes = super::dep_analysis::build_independent(&syntax_set_builder);
 
         eprintln!("");
         eprintln!("");
         eprintln!("");
-        eprintln!("The following indepdent syntax sets were built:");
+        eprintln!("The following independent syntax sets were built:");
 
         let mut data: Vec<u8> = vec![];
 
         let mut offset = 0;
 
 
-        let mut lookup_table = SyntaxSetLookupTable {
+        let mut lookup_table = super::dep_analysis::SyntaxSetLookupTable {
             lookup_by_name: HashMap::new(),
             lookup_by_ext: HashMap::new(),
         };
 
-        for syntax_set in syntax_sets {
+        for syntax_set in independent {
             eprintln!("");
 
             // bincode this syntax set
@@ -102,7 +102,7 @@ impl HighlightingAssets {
             let size = syntax_set_bin.len() as u64;
 
             // Remember where in the binary blob we can find it when we need it again
-            let offset_and_size = OffsetAndSize {
+            let offset_and_size = super::dep_analysis::OffsetAndSize {
                 offset,
                 size
             };

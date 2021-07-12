@@ -21,6 +21,8 @@ use syntect::parsing::{
 
 use crate::assets::HighlightingAssets;
 
+/// Temp because it only lives for a short while; we discard it as soon
+/// as it is serilized to disk
 /// TODO: Better name
 pub struct ExtendedHighlightingAssets {
     pub assets: HighlightingAssets,
@@ -32,7 +34,7 @@ pub struct ExtendedHighlightingAssets {
 // Offset into a binary blob where the start of a syntax set can be found
 // Size is the size.
 #[derive(Debug, Clone, Copy)]
-struct OffsetAndSize {
+pub struct OffsetAndSize {
     offset: u64,
     size: u64,
 }
@@ -46,7 +48,7 @@ pub struct SyntaxSetLookupTable {
 
 
 #[derive(Clone)]
-struct SyntaxDefinitionWithDeps {
+pub struct SyntaxDefinitionWithDeps {
     syntax_definition: SyntaxDefinition,
     deps: Vec<ContextReference>,
 }
