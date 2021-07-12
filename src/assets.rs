@@ -253,7 +253,7 @@ impl HighlightingAssets {
             "Writing indepedndent syntaxes set to {} ... ",
             independent_syntaxes_path.to_string_lossy()
         );
-        dump_to_file(&temp_assets.indepdent_syntaxes, &independent_syntaxes_path).chain_err(|| {
+        dump_to_file(&temp_assets.independent_syntaxes, &independent_syntaxes_path).chain_err(|| {
             format!(
                 "Could not save indepedndent syntaxes to {}",
                 independent_syntaxes_path.to_string_lossy()

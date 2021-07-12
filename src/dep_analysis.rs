@@ -21,6 +21,9 @@ use syntect::parsing::{
 
 use crate::assets::HighlightingAssets;
 
+use serde::{Deserialize, Serialize};
+
+
 /// "Temp" because it only lives for a short while; we discard it as soon
 /// as it is serilized to disk
 pub struct TempHighlightingAssets {
@@ -32,20 +35,21 @@ pub struct TempHighlightingAssets {
 
 // Offset into a binary blob where the start of a syntax set can be found
 // Size is the size.
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, Deserialize, Serialize)]
 pub struct OffsetAndSize {
     pub offset: u64,
     pub size: u64,
 }
 
-#[derive(Debug)]
+
+#[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct SyntaxSetLookupTable {
     pub lookup_by_name: HashMap<String, OffsetAndSize>,
     pub lookup_by_ext: HashMap<String, OffsetAndSize>,
 }
 
 
-#[derive(Clone)]
+#[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct SyntaxDefinitionWithDeps {
     syntax_definition: SyntaxDefinition,
     deps: Vec<ContextReference>,
