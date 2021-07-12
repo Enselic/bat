@@ -106,18 +106,33 @@ impl HighlightingAssets {
             // Append the binary blob with the data
             data.extend(syntax_set_bin);
 
+            let mut names = vec![];
+            let mut extensions = vec![];
+
             // Map all file extensions to the offset and size that we just stored
             for syntax in syntax_set.syntaxes() {
+                names.push(syntax.name.clone());
+
                 lookup_table
                     .lookup_by_name
                     .insert(syntax.name.clone(), offset_and_size);
 
                 for ext in &syntax.file_extensions {
+                    extensions.push(ext.clone());
+
                     lookup_table
                         .lookup_by_ext
                         .insert(ext.to_string(), offset_and_size);
                 }
             }
+
+            eprintln!(
+                "Mapped
+            {:?}
+            {:?}
+            to {:?}",
+                names, extensions, offset_and_size
+            );
 
             // Update offset for next syntax set
             offset += size;
@@ -204,7 +219,11 @@ impl HighlightingAssets {
         }
     }
 
-    pub fn save_to_cache(temp_assets: &super::dep_analysis::TempHighlightingAssets, target_dir: &Path, current_version: &str) -> Result<()> {
+    pub fn save_to_cache(
+        temp_assets: &super::dep_analysis::TempHighlightingAssets,
+        target_dir: &Path,
+        current_version: &str,
+    ) -> Result<()> {
         let _ = fs::create_dir_all(target_dir);
         let theme_set_path = target_dir.join("themes.bin");
         let syntax_set_path = target_dir.join("syntaxes.bin");
@@ -252,7 +271,11 @@ impl HighlightingAssets {
             "Writing indepedndent syntaxes set to {} ... ",
             independent_syntaxes_path.to_string_lossy()
         );
-        dump_to_file(&temp_assets.independent_syntaxes, &independent_syntaxes_path).chain_err(|| {
+        dump_to_file(
+            &temp_assets.independent_syntaxes,
+            &independent_syntaxes_path,
+        )
+        .chain_err(|| {
             format!(
                 "Could not save indepedndent syntaxes to {}",
                 independent_syntaxes_path.to_string_lossy()
