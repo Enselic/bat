@@ -29,12 +29,13 @@ impl HighlightingAssets {
         "Monokai Extended"
     }
 
-    pub fn from_files(source_dir: &Path, include_integrated_assets: bool) -> Result<Self> {
+    pub fn from_files(source_dir: &Path, include_integrated_assets: bool) -> Result<Self> {}
 
-    }
-
-    pub fn from_files_plus_independent(source_dir: &Path, include_integrated_assets: bool) -> Result<super::dep_analysis::ExtendedHighlightingAssets> {
-            let mut theme_set = if include_integrated_assets {
+    pub fn from_files_plus_independent(
+        source_dir: &Path,
+        include_integrated_assets: bool,
+    ) -> Result<super::dep_analysis::TempHighlightingAssets> {
+        let mut theme_set = if include_integrated_assets {
             Self::get_integrated_themeset()
         } else {
             ThemeSet {
@@ -88,13 +89,12 @@ impl HighlightingAssets {
 
         let mut offset = 0;
 
-
         let mut lookup_table = super::dep_analysis::SyntaxSetLookupTable {
             lookup_by_name: HashMap::new(),
             lookup_by_ext: HashMap::new(),
         };
 
-        for syntax_set in independent {
+        for syntax_set in independent_syntaxes {
             eprintln!("");
 
             // bincode this syntax set
@@ -102,20 +102,21 @@ impl HighlightingAssets {
             let size = syntax_set_bin.len() as u64;
 
             // Remember where in the binary blob we can find it when we need it again
-            let offset_and_size = super::dep_analysis::OffsetAndSize {
-                offset,
-                size
-            };
+            let offset_and_size = super::dep_analysis::OffsetAndSize { offset, size };
 
             // Append the binary blob with the data
             data.extend(syntax_set_bin);
 
             // Map all file extensions to the offset and size that we just stored
             for syntax in syntax_set.syntaxes() {
-                lookup_table.lookup_by_name.insert(syntax.name.clone(), offset_and_size);
+                lookup_table
+                    .lookup_by_name
+                    .insert(syntax.name.clone(), offset_and_size);
 
                 for ext in &syntax.file_extensions {
-                    lookup_table.lookup_by_ext.insert(ext.to_string(), offset_and_size);
+                    lookup_table
+                        .lookup_by_ext
+                        .insert(ext.to_string(), offset_and_size);
                 }
             }
 
@@ -123,10 +124,16 @@ impl HighlightingAssets {
             offset += size;
         }
 
-        Ok(HighlightingAssets {
+        let assets = HighlightingAssets {
             syntax_set: syntax_set_builder.build(),
             theme_set,
             fallback_theme: None,
+        };
+
+        Ok(super::dep_analysis::TempHighlightingAssets {
+            assets,
+            lookup: super::dep_analysis::SyntaxSetLookupTable,
+            indepdent_syntaxes: data,
         })
     }
 
@@ -205,7 +212,6 @@ impl HighlightingAssets {
         let lookup_path = target_dir.join("lookup.bin");
         let independent_syntaxes_path = target_dir.join("independent_syntaxes.bin");
         // TODO: metadata for the above
-    
         print!(
             "Writing theme set to {} ... ",
             theme_set_path.to_string_lossy()

@@ -21,13 +21,12 @@ use syntect::parsing::{
 
 use crate::assets::HighlightingAssets;
 
-/// Temp because it only lives for a short while; we discard it as soon
+/// "Temp" because it only lives for a short while; we discard it as soon
 /// as it is serilized to disk
-/// TODO: Better name
-pub struct ExtendedHighlightingAssets {
+pub struct TempHighlightingAssets {
     pub assets: HighlightingAssets,
     pub lookup: SyntaxSetLookupTable,
-    pub independent_syntaxes: Option<&'static [u8]>,
+    pub independent_syntaxes: Vec<u8>, // Option<&'static [u8]>
 }
 
 
