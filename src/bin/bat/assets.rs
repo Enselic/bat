@@ -32,6 +32,14 @@ pub fn clear_assets() {
     fs::remove_file(syntax_set_path).ok();
     println!("okay");
 
+    print!("Clearing lookup cache ... ");
+    fs::remove_file(lookup_path).ok();
+    println!("okay");
+
+    print!("Clearing independent syntaxes cache ... ");
+    fs::remove_file(independent_syntaxes_path).ok();
+    println!("okay");
+
     print!("Clearing metadata file ... ");
     fs::remove_file(metadata_file).ok();
     println!("okay");
