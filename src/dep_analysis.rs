@@ -34,16 +34,15 @@ pub struct TempHighlightingAssets {
 // Size is the size.
 #[derive(Debug, Clone, Copy)]
 pub struct OffsetAndSize {
-    offset: u64,
-    size: u64,
+    pub offset: u64,
+    pub size: u64,
 }
 
 #[derive(Debug)]
 pub struct SyntaxSetLookupTable {
-    lookup_by_name: HashMap<String, OffsetAndSize>,
-    lookup_by_ext: HashMap<String, OffsetAndSize>,
+    pub lookup_by_name: HashMap<String, OffsetAndSize>,
+    pub lookup_by_ext: HashMap<String, OffsetAndSize>,
 }
-
 
 
 #[derive(Clone)]

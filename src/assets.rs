@@ -132,8 +132,8 @@ impl HighlightingAssets {
 
         Ok(super::dep_analysis::TempHighlightingAssets {
             assets,
-            lookup: super::dep_analysis::SyntaxSetLookupTable,
-            indepdent_syntaxes: data,
+            lookup: lookup_table,
+            independent_syntaxes: data,
         })
     }
 
@@ -205,18 +205,19 @@ impl HighlightingAssets {
         }
     }
 
-    pub fn save_to_cache(&self, target_dir: &Path, current_version: &str) -> Result<()> {
+    pub fn save_to_cache(temp_assets: &super::dep_analysis::TempHighlightingAssets, target_dir: &Path, current_version: &str) -> Result<()> {
         let _ = fs::create_dir_all(target_dir);
         let theme_set_path = target_dir.join("themes.bin");
         let syntax_set_path = target_dir.join("syntaxes.bin");
         let lookup_path = target_dir.join("lookup.bin");
         let independent_syntaxes_path = target_dir.join("independent_syntaxes.bin");
         // TODO: metadata for the above
+
         print!(
             "Writing theme set to {} ... ",
             theme_set_path.to_string_lossy()
         );
-        dump_to_file(&self.theme_set, &theme_set_path).chain_err(|| {
+        dump_to_file(&temp_assets.assets.theme_set, &theme_set_path).chain_err(|| {
             format!(
                 "Could not save theme set to {}",
                 theme_set_path.to_string_lossy()
@@ -228,7 +229,7 @@ impl HighlightingAssets {
             "Writing syntax set to {} ... ",
             syntax_set_path.to_string_lossy()
         );
-        dump_to_file(&self.syntax_set, &syntax_set_path).chain_err(|| {
+        dump_to_file(&temp_assets.assets.syntax_set, &syntax_set_path).chain_err(|| {
             format!(
                 "Could not save syntax set to {}",
                 syntax_set_path.to_string_lossy()
@@ -240,7 +241,7 @@ impl HighlightingAssets {
             "Writing lookup set to {} ... ",
             lookup_path.to_string_lossy()
         );
-        dump_to_file(&self.lookup, &lookup_path).chain_err(|| {
+        dump_to_file(&temp_assets.lookup, &lookup_path).chain_err(|| {
             format!(
                 "Could not save syntax set to {}",
                 lookup_path.to_string_lossy()
@@ -252,7 +253,7 @@ impl HighlightingAssets {
             "Writing indepedndent syntaxes set to {} ... ",
             independent_syntaxes_path.to_string_lossy()
         );
-        dump_to_file(&self.indepdent_syntaxes, &independent_syntaxes_path).chain_err(|| {
+        dump_to_file(&temp_assets.indepdent_syntaxes, &independent_syntaxes_path).chain_err(|| {
             format!(
                 "Could not save indepedndent syntaxes to {}",
                 independent_syntaxes_path.to_string_lossy()
