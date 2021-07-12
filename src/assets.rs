@@ -93,12 +93,12 @@ impl HighlightingAssets {
             );
         }
 
-        let syntax_sets = super::dep_analysis::build_disjoint(&syntax_set_builder);
+        let syntax_sets = super::dep_analysis::build_independent(&syntax_set_builder);
 
         eprintln!("");
         eprintln!("");
         eprintln!("");
-        eprintln!("The following disjoint sets were built:");
+        eprintln!("The following indepdent syntax sets were built:");
 
         let mut data: Vec<u8> = vec![];
 
@@ -140,7 +140,7 @@ impl HighlightingAssets {
         }
 
         Ok(HighlightingAssets {
-            disjoint_syntax_sets: Some(syntax_sets),
+            independent_syntaxes: Some(syntax_sets),
             syntax_set: syntax_set_builder.build(),
             theme_set,
             fallback_theme: None,

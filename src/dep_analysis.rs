@@ -94,10 +94,10 @@ fn handle_context_reference(
 }
 
 
-/// Returns a vec of disjoint [`SyntaxSet`]s.
+/// Returns a vec of indepdent [`SyntaxSet`]s.
 /// Enables improved startup time for some projects.
 /// Implemented with an ugly brute force agorithm for prototyping purposes.
-pub fn build_disjoint(syntax_set_builder: &SyntaxSetBuilder) -> Vec<SyntaxSet> {
+pub fn build_independent(syntax_set_builder: &SyntaxSetBuilder) -> Vec<SyntaxSet> {
     let mut result = vec![];
 
     let mut syntax_defs_with_deps = syntax_set_builder.syntaxes().iter().map(|syntax_definition| {
