@@ -53,7 +53,7 @@ fn run_cache_subcommand(matches: &clap::ArgMatches) -> Result<()> {
         let blank = matches.is_present("blank");
 
         let temp_assets = HighlightingAssets::from_files_plus_independent(source_dir, !blank)?;
-        save_to_cache(&temp_assets, target_dir, crate_version!())?;
+        HighlightingAssets::save_to_cache(&temp_assets, target_dir, crate_version!())?;
     } else if matches.is_present("clear") {
         clear_assets();
     }

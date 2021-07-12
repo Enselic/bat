@@ -29,8 +29,7 @@ impl HighlightingAssets {
         "Monokai Extended"
     }
 
-    pub fn from_files(source_dir: &Path, include_integrated_assets: bool) -> Result<Self> {}
-
+    // TODO: Keep around old method for backwards compatibility
     pub fn from_files_plus_independent(
         source_dir: &Path,
         include_integrated_assets: bool,
