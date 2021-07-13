@@ -314,14 +314,28 @@ impl HighlightingAssets {
         match mapping.get_syntax_for(file_name) {
             Some(MappingTarget::MapToUnknown) => None,
             Some(MappingTarget::MapTo(syntax_name)) => {
-                self.syntax_set.find_syntax_by_name(syntax_name)
+                self.find_syntax_by_name(syntax_name)
             }
             None => self.get_extension_syntax(file_name.as_os_str()),
         }
     }
 
-    pub fn find_syntax_by_name(name: &str) -> Option<&SyntaxReference> {
-        
+    pub fn find_syntax_by_name(&self, name: &str) -> Option<&SyntaxReference> {
+        let offset_and_size = self.lookup.lookup_by_name.get(name);
+        if let Some(offset_and_size) = offset_and_size {
+            let OffsetAndSize { offset, size } = *offset_and_size;
+            let end = offset + size;
+            let ref_to_data = match self.syntaxes {
+                RawSyntaxes::Owned(owned) => &owned,
+                RawSyntaxes::Referenced(referenced) => referenced,
+            };
+            let slice_of_syntax_set = &ref_to_data[offset as usize..end as usize];
+            let syntax_set = from_binary(slice_of_syntax_set);
+            self.loaded_syntax_sets.insert(*offset_and_size, syntax_set);
+            return syntax_set.find_syntax_by_name(name);
+        }
+        // TODO: Make single return point
+        return None
     }
 
     pub(crate) fn get_theme(&self, theme: &str) -> &Theme {

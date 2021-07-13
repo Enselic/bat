@@ -19,14 +19,12 @@ use syntect::parsing::{
     SyntaxSetBuilder,
 };
 
-use crate::assets::HighlightingAssets;
-
 use serde::{Deserialize, Serialize};
 
 
 // Offset into a binary blob where the start of a syntax set can be found
 // Size is the size.
-#[derive(Debug, Clone, Copy, Deserialize, Serialize, Hash)]
+#[derive(Debug, Eq, PartialEq, Clone, Copy, Deserialize, Serialize, Hash)]
 pub struct OffsetAndSize {
     pub offset: u64,
     pub size: u64,
