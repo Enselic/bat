@@ -92,7 +92,7 @@ impl HighlightingAssets {
 
         let mut offset = 0;
 
-        let mut lookup_table = SyntaxSetLookupTable {
+        let mut lookup = SyntaxSetLookupTable {
             lookup_by_name: HashMap::new(),
             lookup_by_ext: HashMap::new(),
         };
@@ -100,7 +100,12 @@ impl HighlightingAssets {
         for syntax_set in independent_syntaxes {
             eprintln!("");
 
-            handle_independent_syntax(&syntax_set, offset, &data);
+            let size = Self::handle_independent_syntax(
+                &mut lookup, 
+                &syntax_set, 
+                offset, 
+                &mut data,
+            );
 
             // Update offset for next syntax set
             offset += size;
@@ -108,20 +113,25 @@ impl HighlightingAssets {
 
         // Last, add the full fallback SyntaxSet that contains everything
         let full_syntax_set = syntax_set_builder.build();
-        handle_independent_syntax(&full_syntax_set, offset, &data)
-
-
-        let assets = ;
+        // TODO: Use None to mark "full syntax set"
+        Self::handle_independent_syntax(&mut lookup, &full_syntax_set, offset, &mut data);
 
         Ok(HighlightingAssets {
-            syntax_set: 
+            lookup,
+            syntaxes: RawSyntaxes::Owned(data),
+            loaded_syntax_sets: HashMap::new(),
             theme_set,
             fallback_theme: None,
         })
     }
 
     // TODO: Better name on SyntaxSetLookupTable
-    fn handle_independent_syntax(lookup_table: &mut SyntaxSetLookupTable, syntax_set: &SyntaxSet, offset: u64, data: &mut Vec<u8>) {
+    fn handle_independent_syntax(
+        lookup_table: &mut SyntaxSetLookupTable, 
+        syntax_set: &SyntaxSet,
+         offset: u64, 
+         data: &mut Vec<u8>,
+        ) -> u64 {
         // bincode this syntax set
         let syntax_set_bin = dump_binary(&syntax_set);
         let size = syntax_set_bin.len() as u64;
@@ -159,6 +169,8 @@ impl HighlightingAssets {
         to {:?}",
             names, extensions, offset_and_size
         );
+
+        return size
     }
 
     pub fn from_cache(cache_path: &Path) -> Result<Self> {
