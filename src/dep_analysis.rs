@@ -35,7 +35,7 @@ pub struct TempHighlightingAssets {
 
 // Offset into a binary blob where the start of a syntax set can be found
 // Size is the size.
-#[derive(Debug, Clone, Copy, Deserialize, Serialize)]
+#[derive(Debug, Clone, Copy, Deserialize, Serialize, Hash)]
 pub struct OffsetAndSize {
     pub offset: u64,
     pub size: u64,

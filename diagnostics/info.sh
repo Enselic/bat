@@ -1,5 +1,4 @@
 #!/usr/bin/env bash
-# TODO: This file used?
 _modules=('system' 'bat' 'bat_config' 'bat_wrapper' 'bat_wrapper_function' 'tool')
 _modules_consented=()
 

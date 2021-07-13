@@ -5,6 +5,7 @@ use std::fs::{self, File};
 use std::io::BufReader;
 use std::path::Path;
 
+use crate::dep_analysis::*;
 use syntect::dumps::{dump_binary, dump_to_file, from_binary, from_reader};
 use syntect::highlighting::{Theme, ThemeSet};
 use syntect::parsing::{SyntaxReference, SyntaxSet, SyntaxSetBuilder};
@@ -19,7 +20,9 @@ use crate::syntax_mapping::{MappingTarget, SyntaxMapping};
 
 #[derive(Debug)]
 pub struct HighlightingAssets {
-    pub syntax_set: SyntaxSet,
+    pub lookup: SyntaxSetLookupTable,
+    pub syntaxes: &'static [u8],
+    pub loaded_syntax_sets: HashMap<OffsetAndSize, SyntaxSet>,
     pub theme_set: ThemeSet,
     pub fallback_theme: Option<&'static str>,
 }
@@ -29,11 +32,7 @@ impl HighlightingAssets {
         "Monokai Extended"
     }
 
-    // TODO: Keep around old method for backwards compatibility
-    pub fn from_files_plus_independent(
-        source_dir: &Path,
-        include_integrated_assets: bool,
-    ) -> Result<super::dep_analysis::TempHighlightingAssets> {
+    pub fn from_files(source_dir: &Path, include_integrated_assets: bool) -> Result<Self> {
         let mut theme_set = if include_integrated_assets {
             Self::get_integrated_themeset()
         } else {
@@ -152,20 +151,29 @@ impl HighlightingAssets {
     }
 
     pub fn from_cache(cache_path: &Path) -> Result<Self> {
+        let lookup_path = cache_path.join("lookup.bin");
         let syntax_set_path = cache_path.join("syntaxes.bin");
         let theme_set_path = cache_path.join("themes.bin");
-        // TODO
 
-        let syntax_set_file = File::open(&syntax_set_path).chain_err(|| {
+        let lookup_file = File::open(&lookup_path).chain_err(|| {
             format!(
-                "Could not load cached syntax set '{}'",
-                syntax_set_path.to_string_lossy()
+                "Could not load cached lookup map '{}'",
+                lookup_path.to_string_lossy()
             )
         })?;
-        let syntax_set: SyntaxSet = from_reader(BufReader::new(syntax_set_file))
+        let lookup: SyntaxSetLookupTable = from_reader(BufReader::new(lookup_file))
             .chain_err(|| "Could not parse cached syntax set")?;
 
-        let theme_set_file = File::open(&theme_set_path).chain_err(|| {
+            let syntax_set_file = File::open(&syntax_set_path).chain_err(|| {
+                format!(
+                    "Could not load cached syntax set '{}'",
+                    syntax_set_path.to_string_lossy()
+                )
+            })?;
+            let syntax_set: SyntaxSet = from_reader(BufReader::new(syntax_set_file))
+                .chain_err(|| "Could not parse cached syntax set")?;
+    
+            let theme_set_file = File::open(&theme_set_path).chain_err(|| {
             format!(
                 "Could not load cached theme set '{}'",
                 theme_set_path.to_string_lossy()
@@ -175,10 +183,12 @@ impl HighlightingAssets {
             .chain_err(|| "Could not parse cached theme set")?;
 
         Ok(HighlightingAssets {
-            syntax_set,
+            lookup,
+            syntaxes: "loading from cache not supported yet",
+            loaded_syntax_sets: HashMap(),
             theme_set,
             fallback_theme: None,
-        })
+        }) 
     }
 
     fn get_integrated_syntaxset() -> SyntaxSet {
@@ -214,6 +224,7 @@ impl HighlightingAssets {
         let lookup = Self::get_integrated_lookup();
 
         if let super::input::InputKind::OrdinaryFile(ref pathbuf) = input.kind {
+            pathbuf.exte
 
         }
 
@@ -310,6 +321,7 @@ impl HighlightingAssets {
         self.theme_set.themes.keys().map(|s| s.as_ref())
     }
 
+    // TODO look here
     pub fn syntax_for_file_name(
         &self,
         file_name: impl AsRef<Path>,
