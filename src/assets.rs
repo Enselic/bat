@@ -244,22 +244,21 @@ impl HighlightingAssets {
     }
 
     pub fn save_to_cache(
-        temp_assets: &HighlightingAssets,
+        assets: &HighlightingAssets,
         target_dir: &Path,
         current_version: &str,
     ) -> Result<()> {
         let _ = fs::create_dir_all(target_dir);
         let theme_set_path = target_dir.join("themes.bin");
-        let syntax_set_path = target_dir.join("syntaxes.bin");
+        let syntaxes_path = target_dir.join("syntaxes.bin");
         let lookup_path = target_dir.join("lookup.bin");
-        let independent_syntaxes_path = target_dir.join("independent_syntaxes.bin");
         // TODO: metadata for the above
 
         print!(
             "Writing theme set to {} ... ",
             theme_set_path.to_string_lossy()
         );
-        dump_to_file(&temp_assets.assets.theme_set, &theme_set_path).chain_err(|| {
+        dump_to_file(&assets.theme_set, &theme_set_path).chain_err(|| {
             format!(
                 "Could not save theme set to {}",
                 theme_set_path.to_string_lossy()
@@ -268,41 +267,29 @@ impl HighlightingAssets {
         println!("okay");
 
         print!(
-            "Writing syntax set to {} ... ",
-            syntax_set_path.to_string_lossy()
+            "Writing syntaxes to {} ... ",
+            syntaxes_path.to_string_lossy()
         );
-        dump_to_file(&temp_assets.assets.syntax_set, &syntax_set_path).chain_err(|| {
+        let syntaxes = match assets.syntaxes {
+            RawSyntaxes::Owned(data) => &data,
+            RawSyntaxes::Referenced(data) => data,
+        };
+        dump_to_file(&syntaxes, &syntaxes_path).chain_err(|| {
             format!(
-                "Could not save syntax set to {}",
-                syntax_set_path.to_string_lossy()
+                "Could not save syntaxes to {}",
+                syntaxes_path.to_string_lossy()
             )
         })?;
         println!("okay");
 
         print!(
-            "Writing lookup set to {} ... ",
+            "Writing lookup to {} ... ",
             lookup_path.to_string_lossy()
         );
-        dump_to_file(&temp_assets.lookup, &lookup_path).chain_err(|| {
+        dump_to_file(&assets.lookup, &lookup_path).chain_err(|| {
             format!(
-                "Could not save syntax set to {}",
+                "Could not save lookup to {}",
                 lookup_path.to_string_lossy()
-            )
-        })?;
-        println!("okay");
-
-        print!(
-            "Writing indepedndent syntaxes set to {} ... ",
-            independent_syntaxes_path.to_string_lossy()
-        );
-        dump_to_file(
-            &temp_assets.independent_syntaxes,
-            &independent_syntaxes_path,
-        )
-        .chain_err(|| {
-            format!(
-                "Could not save indepedndent syntaxes to {}",
-                independent_syntaxes_path.to_string_lossy()
             )
         })?;
         println!("okay");

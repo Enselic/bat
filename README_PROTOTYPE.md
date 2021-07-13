@@ -22,3 +22,5 @@ MVP scope:
 The way it works:
 * We analyzes dependencies between SyntaxDefinitions and write them to file with lookup map
 * TODO
+
+syntaxes.bin is changed to contain several independent syntax sets, concatenated in binary form and looked up with an offset and size hashmap.
