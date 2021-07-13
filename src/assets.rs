@@ -18,10 +18,15 @@ use crate::error::*;
 use crate::input::{InputReader, OpenedInput, OpenedInputKind};
 use crate::syntax_mapping::{MappingTarget, SyntaxMapping};
 
+pub enum RawSyntaxes {
+    Owned(Vec<u8>),
+    Referenced(&'static [u8])
+}
+
 #[derive(Debug)]
 pub struct HighlightingAssets {
     pub lookup: SyntaxSetLookupTable,
-    pub syntaxes: &'static [u8],
+    pub syntaxes: RawSyntaxes,
     pub loaded_syntax_sets: HashMap<OffsetAndSize, SyntaxSet>,
     pub theme_set: ThemeSet,
     pub fallback_theme: Option<&'static str>,
