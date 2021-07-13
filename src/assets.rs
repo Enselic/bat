@@ -229,30 +229,15 @@ impl HighlightingAssets {
     }
 
 
-
     pub fn from_binary() -> Self {
-        let syntax_set = Self::get_integrated_syntaxset();
-        let theme_set = Self::get_integrated_themeset();
-
-        HighlightingAssets {
-            syntax_set,
-            theme_set,
-            fallback_theme: None,
-        }
-    }
-
-    pub fn from_binary_for_input(input: &crate::input::Input) -> Self {
-        let syntax_set = Self::get_integrated_syntaxset();
-        let theme_set = Self::get_integrated_themeset();
         let lookup = Self::get_integrated_lookup();
-
-        if let super::input::InputKind::OrdinaryFile(ref pathbuf) = input.kind {
-            pathbuf.exte
-
-        }
+        let syntaxes = Self::get_integrated_syntaxes();
+        let theme_set = Self::get_integrated_themeset();
 
         HighlightingAssets {
-            syntax_set,
+            lookup,
+            syntaxes: RawSyntaxes::Referenced(syntaxes),
+            loaded_syntax_sets: HashMap::new(),
             theme_set,
             fallback_theme: None,
         }
