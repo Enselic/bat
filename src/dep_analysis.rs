@@ -24,15 +24,6 @@ use crate::assets::HighlightingAssets;
 use serde::{Deserialize, Serialize};
 
 
-/// "Temp" because it only lives for a short while; we discard it as soon
-/// as it is serilized to disk
-pub struct TempHighlightingAssets {
-    pub assets: HighlightingAssets,
-    pub lookup: SyntaxSetLookupTable,
-    pub independent_syntaxes: Vec<u8>, // Option<&'static [u8]>
-}
-
-
 // Offset into a binary blob where the start of a syntax set can be found
 // Size is the size.
 #[derive(Debug, Clone, Copy, Deserialize, Serialize, Hash)]

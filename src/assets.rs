@@ -162,6 +162,7 @@ impl HighlightingAssets {
 
     pub fn from_cache(cache_path: &Path) -> Result<Self> {
         let lookup_path = cache_path.join("lookup.bin");
+        // TODO: Rename syntax_set_path since it now contains many (unloaded) syntax sets
         let syntax_set_path = cache_path.join("syntaxes.bin");
         let theme_set_path = cache_path.join("themes.bin");
 
@@ -172,30 +173,31 @@ impl HighlightingAssets {
             )
         })?;
         let lookup: SyntaxSetLookupTable = from_reader(BufReader::new(lookup_file))
-            .chain_err(|| "Could not parse cached syntax set")?;
+            .chain_err(|| "Could not parse lookup map")?;
 
-            let syntax_set_file = File::open(&syntax_set_path).chain_err(|| {
-                format!(
-                    "Could not load cached syntax set '{}'",
-                    syntax_set_path.to_string_lossy()
-                )
-            })?;
-            let syntax_set: SyntaxSet = from_reader(BufReader::new(syntax_set_file))
-                .chain_err(|| "Could not parse cached syntax set")?;
-    
-            let theme_set_file = File::open(&theme_set_path).chain_err(|| {
+        let mut syntaxes_data = vec!();
+        let syntax_set_file = File::open(&syntax_set_path).chain_err(|| {
             format!(
-                "Could not load cached theme set '{}'",
-                theme_set_path.to_string_lossy()
+                "Could not load cached syntax set '{}'",
+                syntax_set_path.to_string_lossy()
             )
+        })?;
+        use std::io::Read;
+        syntax_set_file.read_to_end(&mut syntaxes_data);
+
+        let theme_set_file = File::open(&theme_set_path).chain_err(|| {
+        format!(
+            "Could not load cached theme set '{}'",
+            theme_set_path.to_string_lossy()
+        )
         })?;
         let theme_set: ThemeSet = from_reader(BufReader::new(theme_set_file))
             .chain_err(|| "Could not parse cached theme set")?;
 
         Ok(HighlightingAssets {
             lookup,
-            syntaxes: "loading from cache not supported yet",
-            loaded_syntax_sets: HashMap(),
+            syntaxes: RawSyntaxes::Owned(syntaxes_data),
+            loaded_syntax_sets: HashMap::new(),
             theme_set,
             fallback_theme: None,
         }) 
@@ -246,7 +248,7 @@ impl HighlightingAssets {
     }
 
     pub fn save_to_cache(
-        temp_assets: &super::dep_analysis::TempHighlightingAssets,
+        temp_assets: &HighlightingAssets,
         target_dir: &Path,
         current_version: &str,
     ) -> Result<()> {
