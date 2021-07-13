@@ -109,7 +109,7 @@ pub(crate) struct InteractivePrinter<'a> {
     #[cfg(feature = "git")]
     pub line_changes: &'a Option<LineChanges>,
     highlighter: Option<HighlightLines<'a>>,
-    syntax_set: &'a SyntaxSet,
+    //syntax_set: &'a SyntaxSet,
     background_color_highlight: Option<Color>,
 }
 
@@ -174,7 +174,8 @@ impl<'a> InteractivePrinter<'a> {
             let syntax = match assets.get_syntax(config.language, input, &config.syntax_mapping) {
                 Ok(syntax) => syntax,
                 Err(Error(ErrorKind::UndetectedSyntax(_), _)) => {
-                    assets.syntax_set.find_syntax_plain_text()
+                    panic!("sorry not working")
+                    //assets.syntax_set.find_syntax_plain_text()
                 }
                 Err(e) => return Err(e),
             };
@@ -192,7 +193,7 @@ impl<'a> InteractivePrinter<'a> {
             #[cfg(feature = "git")]
             line_changes,
             highlighter,
-            syntax_set: &assets.syntax_set,
+            //syntax_set: &assets.syntax_set,
             background_color_highlight,
         })
     }
@@ -389,7 +390,7 @@ impl<'a> Printer for InteractivePrinter<'a> {
                     return Ok(());
                 }
             };
-            highlighter.highlight(line.as_ref(), self.syntax_set)
+            //highlighter.highlight(line.as_ref(), self.syntax_set)
         };
 
         if out_of_range {
