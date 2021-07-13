@@ -22,7 +22,10 @@ use crate::{
     config::{config_file, generate_config_file},
 };
 
-use assets::{assets_from_cache_or_binary, assets_from_cache_or_binary_for_input, cache_dir, clear_assets, config_dir};
+use assets::{
+    assets_from_cache_or_binary, assets_from_cache_or_binary_for_input, cache_dir, clear_assets,
+    config_dir,
+};
 use clap::crate_version;
 use directories::PROJECT_DIRS;
 use globset::GlobMatcher;
@@ -52,8 +55,8 @@ fn run_cache_subcommand(matches: &clap::ArgMatches) -> Result<()> {
 
         let blank = matches.is_present("blank");
 
-        let temp_assets = HighlightingAssets::from_files_plus_independent(source_dir, !blank)?;
-        HighlightingAssets::save_to_cache(&temp_assets, target_dir, crate_version!())?;
+        let assets = HighlightingAssets::from_files(source_dir, !blank)?;
+        assets.save_to_cache(target_dir, crate_version!())?;
     } else if matches.is_present("clear") {
         clear_assets();
     }
@@ -216,22 +219,9 @@ pub fn list_themes(cfg: &Config) -> Result<()> {
 }
 
 fn run_controller(inputs: Vec<Input>, config: &Config) -> Result<bool> {
-    // For good startup performance, we only want to load the necesary
-    // assets for a given input. So we load one set of assets for
-    // each input
-    let mut assets = Vec::with_capacity(inputs.len());
-    for input in &inputs {
-        let asset = assets_from_cache_or_binary_for_input(&input)?;
-        assets.push(asset);
-    }
-
-    let dummy_assets = HighlightingAssets {
-        syntax_set: syntect::parsing::SyntaxSet::default(),
-        theme_set: syntect::highlighting::ThemeSet::default(),
-        fallback_theme: None,
-    };
-    let controller = Controller::new(&config, &dummy_assets);
-    controller.run_with_assets(inputs, &assets)
+    let assets = assets_from_cache_or_binary()?;
+    let controller = Controller::new(&config, &assets);
+    controller.run(inputs)
 }
 
 /// Returns `Err(..)` upon fatal errors. Otherwise, returns `Ok(true)` on full success and

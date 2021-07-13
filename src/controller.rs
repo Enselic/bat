@@ -18,7 +18,6 @@ use clircle::Clircle;
 
 pub struct Controller<'a> {
     config: &'a Config<'a>,
-    // TODO: Introduce a proper per-input API
     assets: &'a HighlightingAssets,
 }
 
@@ -31,37 +30,9 @@ impl<'b> Controller<'b> {
         self.run_with_error_handler(inputs, default_error_handler)
     }
 
-    pub fn run_with_assets(
-        &self,
-        inputs: Vec<Input>,
-        assets: &'b [HighlightingAssets],
-    ) -> Result<bool> {
-        self.run_with_error_handler_and_assets(
-            inputs, 
-            assets,
-            default_error_handler,
-        )
-    }
-
     pub fn run_with_error_handler(
         &self,
         inputs: Vec<Input>,
-        handle_error: impl Fn(&Error, &mut dyn Write),
-    ) -> Result<bool> {
-        // TODO:
-        // self.run_with_error_handler_and_assets(
-        //     inputs, 
-        //     assets,
-        //     default_error_handler,
-        // )
-
-        Ok(false)        
-    }
-
-    fn run_with_error_handler_and_assets(
-        &self,
-        inputs: Vec<Input>,
-        assets: &'b [HighlightingAssets],
         handle_error: impl Fn(&Error, &mut dyn Write),
     ) -> Result<bool> {
         let mut output_type;
@@ -157,7 +128,7 @@ impl<'b> Controller<'b> {
                     } else {
                         Box::new(InteractivePrinter::new(
                             &self.config,
-                            &assets[index],
+                            &self.assets,
                             &mut opened_input,
                             #[cfg(feature = "git")]
                             &line_changes,

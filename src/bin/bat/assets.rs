@@ -45,28 +45,6 @@ pub fn clear_assets() {
     println!("okay");
 }
 
-pub fn assets_from_cache_or_binary_for_input(input: &bat::input::Input) -> Result<HighlightingAssets> {
-    let cache_dir = PROJECT_DIRS.cache_dir();
-    if let Some(metadata) = AssetsMetadata::load_from_folder(&cache_dir)? {
-        if !metadata.is_compatible_with(crate_version!()) {
-            return Err(format!(
-                "The binary caches for the user-customized syntaxes and themes \
-                 in '{}' are not compatible with this version of bat ({}). To solve this, \
-                 either rebuild the cache (bat cache --build) or remove \
-                 the custom syntaxes/themes (bat cache --clear).\n\
-                 For more information, see:\n\n  \
-                 https://github.com/sharkdp/bat#adding-new-syntaxes--language-definitions",
-                cache_dir.to_string_lossy(),
-                crate_version!()
-            )
-            .into());
-        }
-    }
-
-    Ok(HighlightingAssets::from_cache(&cache_dir)
-        .unwrap_or_else(|_| HighlightingAssets::from_binary_for_input(input)))
-}
-
 pub fn assets_from_cache_or_binary() -> Result<HighlightingAssets> {
     let cache_dir = PROJECT_DIRS.cache_dir();
     if let Some(metadata) = AssetsMetadata::load_from_folder(&cache_dir)? {
