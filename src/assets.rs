@@ -92,7 +92,7 @@ impl HighlightingAssets {
 
         let mut offset = 0;
 
-        let mut lookup_table = super::dep_analysis::SyntaxSetLookupTable {
+        let mut lookup_table = SyntaxSetLookupTable {
             lookup_by_name: HashMap::new(),
             lookup_by_ext: HashMap::new(),
         };
@@ -120,7 +120,8 @@ impl HighlightingAssets {
         })
     }
 
-    fn handle_independent_syntax(syntax_set: &SyntaxSet, offset: u64, data: &mut Vec<u8>) {
+    // TODO: Better name on SyntaxSetLookupTable
+    fn handle_independent_syntax(lookup_table: &mut SyntaxSetLookupTable, syntax_set: &SyntaxSet, offset: u64, data: &mut Vec<u8>) {
         // bincode this syntax set
         let syntax_set_bin = dump_binary(&syntax_set);
         let size = syntax_set_bin.len() as u64;
