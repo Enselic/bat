@@ -11,6 +11,7 @@ What does not work:
 * Size of bat binary significantly larger
 * Loading syntaxes from a user-cache
 * Public API compatiblity
+* metadata on new assets
 
 
 Future considerations:
