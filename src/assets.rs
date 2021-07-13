@@ -100,59 +100,64 @@ impl HighlightingAssets {
         for syntax_set in independent_syntaxes {
             eprintln!("");
 
-            // bincode this syntax set
-            let syntax_set_bin = dump_binary(&syntax_set);
-            let size = syntax_set_bin.len() as u64;
-
-            // Remember where in the binary blob we can find it when we need it again
-            let offset_and_size = super::dep_analysis::OffsetAndSize { offset, size };
-
-            // Append the binary blob with the data
-            data.extend(syntax_set_bin);
-
-            let mut names = vec![];
-            let mut extensions = vec![];
-
-            // Map all file extensions to the offset and size that we just stored
-            for syntax in syntax_set.syntaxes() {
-                names.push(syntax.name.clone());
-
-                lookup_table
-                    .lookup_by_name
-                    .insert(syntax.name.clone(), offset_and_size);
-
-                for ext in &syntax.file_extensions {
-                    extensions.push(ext.clone());
-
-                    lookup_table
-                        .lookup_by_ext
-                        .insert(ext.to_string(), offset_and_size);
-                }
-            }
-
-            eprintln!(
-                "Mapped
-            {:?}
-            {:?}
-            to {:?}",
-                names, extensions, offset_and_size
-            );
+            handle_independent_syntax(&syntax_set, offset, &data);
 
             // Update offset for next syntax set
             offset += size;
         }
 
-        let assets = HighlightingAssets {
-            syntax_set: syntax_set_builder.build(),
+        // Last, add the full fallback SyntaxSet that contains everything
+        let full_syntax_set = syntax_set_builder.build();
+        handle_independent_syntax(&full_syntax_set, offset, &data)
+
+
+        let assets = ;
+
+        Ok(HighlightingAssets {
+            syntax_set: 
             theme_set,
             fallback_theme: None,
-        };
-
-        Ok(super::dep_analysis::TempHighlightingAssets {
-            assets,
-            lookup: lookup_table,
-            independent_syntaxes: data,
         })
+    }
+
+    fn handle_independent_syntax(syntax_set: &SyntaxSet, offset: u64, data: &mut Vec<u8>) {
+        // bincode this syntax set
+        let syntax_set_bin = dump_binary(&syntax_set);
+        let size = syntax_set_bin.len() as u64;
+
+        // Remember where in the binary blob we can find it when we need it again
+        let offset_and_size = super::dep_analysis::OffsetAndSize { offset, size };
+
+        // Append the binary blob with the data
+        data.extend(syntax_set_bin);
+
+        let mut names = vec![];
+        let mut extensions = vec![];
+
+        // Map all file extensions to the offset and size that we just stored
+        for syntax in syntax_set.syntaxes() {
+            names.push(syntax.name.clone());
+
+            lookup_table
+                .lookup_by_name
+                .insert(syntax.name.clone(), offset_and_size);
+
+            for ext in &syntax.file_extensions {
+                extensions.push(ext.clone());
+
+                lookup_table
+                    .lookup_by_ext
+                    .insert(ext.to_string(), offset_and_size);
+            }
+        }
+
+        eprintln!(
+            "Mapped
+        {:?}
+        {:?}
+        to {:?}",
+            names, extensions, offset_and_size
+        );
     }
 
     pub fn from_cache(cache_path: &Path) -> Result<Self> {
