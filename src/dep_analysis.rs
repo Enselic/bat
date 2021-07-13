@@ -34,7 +34,7 @@ pub struct OffsetAndSize {
 
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
-pub struct SyntaxSetLookupTable {
+pub struct SyntaxesLookup {
     pub lookup_by_name: HashMap<String, OffsetAndSize>,
     pub lookup_by_ext: HashMap<String, OffsetAndSize>,
 }

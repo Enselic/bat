@@ -25,7 +25,7 @@ pub enum RawSyntaxes {
 
 #[derive(Debug)]
 pub struct HighlightingAssets {
-    pub lookup: SyntaxSetLookupTable,
+    pub lookup: SyntaxesLookup,
     pub syntaxes: RawSyntaxes,
     pub loaded_syntax_sets: HashMap<OffsetAndSize, SyntaxSet>,
     pub theme_set: ThemeSet,
@@ -92,7 +92,7 @@ impl HighlightingAssets {
 
         let mut offset = 0;
 
-        let mut lookup = SyntaxSetLookupTable {
+        let mut lookup = SyntaxesLookup {
             lookup_by_name: HashMap::new(),
             lookup_by_ext: HashMap::new(),
         };
@@ -125,9 +125,9 @@ impl HighlightingAssets {
         })
     }
 
-    // TODO: Better name on SyntaxSetLookupTable
+    // TODO: Better name on SyntaxesLookup
     fn handle_independent_syntax(
-        lookup_table: &mut SyntaxSetLookupTable, 
+        lookup_table: &mut SyntaxesLookup, 
         syntax_set: &SyntaxSet,
          offset: u64, 
          data: &mut Vec<u8>,
@@ -185,7 +185,7 @@ impl HighlightingAssets {
                 lookup_path.to_string_lossy()
             )
         })?;
-        let lookup: SyntaxSetLookupTable = from_reader(BufReader::new(lookup_file))
+        let lookup: SyntaxesLookup = from_reader(BufReader::new(lookup_file))
             .chain_err(|| "Could not parse lookup map")?;
 
         let mut syntaxes_data = vec!();
@@ -216,21 +216,19 @@ impl HighlightingAssets {
         }) 
     }
 
-    fn get_integrated_syntaxset() -> SyntaxSet {
-        from_binary(include_bytes!("../assets/syntaxes.bin"))
+    fn get_integrated_lookup() -> SyntaxesLookup {
+        from_binary(include_bytes!("../assets/lookup.bin"))
+    }
+
+    fn get_integrated_syntaxes() -> &'static [u8] {
+        include_bytes!("../assets/syntaxes.bin")
     }
 
     fn get_integrated_themeset() -> ThemeSet {
         from_binary(include_bytes!("../assets/themes.bin"))
     }
 
-    fn get_integrated_lookup() -> ThemeSet {
-        from_binary(include_bytes!("../assets/lookup.bin"))
-    }
 
-    fn get_integrated_independent_syntaxes() -> &'static [u8] {
-        include_bytes!("../assets/independent_syntaxes.bin")
-    }
 
     pub fn from_binary() -> Self {
         let syntax_set = Self::get_integrated_syntaxset();
