@@ -20,7 +20,7 @@ use crate::syntax_mapping::{MappingTarget, SyntaxMapping};
 
 pub enum RawSyntaxes {
     Owned(Vec<u8>),
-    Referenced(&'static [u8])
+    Referenced(&'static [u8]),
 }
 
 #[derive(Debug)]
@@ -100,12 +100,7 @@ impl HighlightingAssets {
         for syntax_set in independent_syntaxes {
             eprintln!("");
 
-            let size = Self::handle_independent_syntax(
-                &mut lookup, 
-                &syntax_set, 
-                offset, 
-                &mut data,
-            );
+            let size = Self::handle_independent_syntax(&mut lookup, &syntax_set, offset, &mut data);
 
             // Update offset for next syntax set
             offset += size;
@@ -127,11 +122,11 @@ impl HighlightingAssets {
 
     // TODO: Better name on SyntaxesLookup
     fn handle_independent_syntax(
-        lookup_table: &mut SyntaxesLookup, 
+        lookup_table: &mut SyntaxesLookup,
         syntax_set: &SyntaxSet,
-         offset: u64, 
-         data: &mut Vec<u8>,
-        ) -> u64 {
+        offset: u64,
+        data: &mut Vec<u8>,
+    ) -> u64 {
         // bincode this syntax set
         let syntax_set_bin = dump_binary(&syntax_set);
         let size = syntax_set_bin.len() as u64;
@@ -170,7 +165,7 @@ impl HighlightingAssets {
             names, extensions, offset_and_size
         );
 
-        return size
+        return size;
     }
 
     pub fn from_cache(cache_path: &Path) -> Result<Self> {
@@ -185,10 +180,10 @@ impl HighlightingAssets {
                 lookup_path.to_string_lossy()
             )
         })?;
-        let lookup: SyntaxesLookup = from_reader(BufReader::new(lookup_file))
-            .chain_err(|| "Could not parse lookup map")?;
+        let lookup: SyntaxesLookup =
+            from_reader(BufReader::new(lookup_file)).chain_err(|| "Could not parse lookup map")?;
 
-        let mut syntaxes_data = vec!();
+        let mut syntaxes_data = vec![];
         let syntax_set_file = File::open(&syntax_set_path).chain_err(|| {
             format!(
                 "Could not load cached syntax set '{}'",
@@ -199,10 +194,10 @@ impl HighlightingAssets {
         syntax_set_file.read_to_end(&mut syntaxes_data);
 
         let theme_set_file = File::open(&theme_set_path).chain_err(|| {
-        format!(
-            "Could not load cached theme set '{}'",
-            theme_set_path.to_string_lossy()
-        )
+            format!(
+                "Could not load cached theme set '{}'",
+                theme_set_path.to_string_lossy()
+            )
         })?;
         let theme_set: ThemeSet = from_reader(BufReader::new(theme_set_file))
             .chain_err(|| "Could not parse cached theme set")?;
@@ -213,7 +208,7 @@ impl HighlightingAssets {
             loaded_syntax_sets: HashMap::new(),
             theme_set,
             fallback_theme: None,
-        }) 
+        })
     }
 
     fn get_integrated_lookup() -> SyntaxesLookup {
@@ -227,7 +222,6 @@ impl HighlightingAssets {
     fn get_integrated_themeset() -> ThemeSet {
         from_binary(include_bytes!("../assets/themes.bin"))
     }
-
 
     pub fn from_binary() -> Self {
         let lookup = Self::get_integrated_lookup();
@@ -282,16 +276,9 @@ impl HighlightingAssets {
         })?;
         println!("okay");
 
-        print!(
-            "Writing lookup to {} ... ",
-            lookup_path.to_string_lossy()
-        );
-        dump_to_file(&assets.lookup, &lookup_path).chain_err(|| {
-            format!(
-                "Could not save lookup to {}",
-                lookup_path.to_string_lossy()
-            )
-        })?;
+        print!("Writing lookup to {} ... ", lookup_path.to_string_lossy());
+        dump_to_file(&assets.lookup, &lookup_path)
+            .chain_err(|| format!("Could not save lookup to {}", lookup_path.to_string_lossy()))?;
         println!("okay");
 
         print!(
@@ -309,7 +296,8 @@ impl HighlightingAssets {
     }
 
     pub fn syntaxes(&self) -> &[SyntaxReference] {
-        self.syntax_set.syntaxes()
+        //self.syntax_set.syntaxes()
+        panic!("not yet implemented");
     }
 
     pub fn themes(&self) -> impl Iterator<Item = &str> {
@@ -330,6 +318,10 @@ impl HighlightingAssets {
             }
             None => self.get_extension_syntax(file_name.as_os_str()),
         }
+    }
+
+    pub fn find_syntax_by_name(name: &str) -> Option<&SyntaxReference> {
+        
     }
 
     pub(crate) fn get_theme(&self, theme: &str) -> &Theme {
