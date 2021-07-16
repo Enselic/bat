@@ -18,7 +18,7 @@ use crate::syntax_mapping::{MappingTarget, SyntaxMapping};
 
 #[derive(Debug)]
 pub struct HighlightingAssets {
-    pub(crate) syntax_set: SyntaxSet,
+    syntax_set: SyntaxSet,
     pub(crate) theme_set: ThemeSet,
     fallback_theme: Option<&'static str>,
 }
@@ -144,6 +144,10 @@ impl HighlightingAssets {
 
     pub fn set_fallback_theme(&mut self, theme: &'static str) {
         self.fallback_theme = Some(theme);
+    }
+
+    pub(crate) fn get_syntax_set(&self) -> &SyntaxSet {
+        &self.syntax_set
     }
 
     pub fn syntaxes(&self) -> &[SyntaxReference] {
