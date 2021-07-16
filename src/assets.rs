@@ -127,7 +127,7 @@ impl HighlightingAssets {
         let _ = fs::create_dir_all(target_dir);
         asset_to_cache(&self.theme_set, &target_dir.join("themes.bin"), "theme set")?;
         asset_to_cache(
-            &self.syntax_set,
+            self.get_syntax_set(),
             &target_dir.join("syntaxes.bin"),
             "syntax set",
         )?;
@@ -151,7 +151,7 @@ impl HighlightingAssets {
     }
 
     pub fn syntaxes(&self) -> &[SyntaxReference] {
-        self.syntax_set.syntaxes()
+        self.get_syntax_set().syntaxes()
     }
 
     pub fn themes(&self) -> impl Iterator<Item = &str> {
@@ -167,7 +167,7 @@ impl HighlightingAssets {
         match mapping.get_syntax_for(file_name) {
             Some(MappingTarget::MapToUnknown) => None,
             Some(MappingTarget::MapTo(syntax_name)) => {
-                self.syntax_set.find_syntax_by_name(syntax_name)
+                self.get_syntax_set().find_syntax_by_name(syntax_name)
             }
             None => self.get_extension_syntax(file_name.as_os_str()),
         }
@@ -196,7 +196,7 @@ impl HighlightingAssets {
         mapping: &SyntaxMapping,
     ) -> Result<&SyntaxReference> {
         if let Some(language) = language {
-            self.syntax_set
+            self.get_syntax_set()
                 .find_syntax_by_token(language)
                 .ok_or_else(|| ErrorKind::UnknownSyntax(language.to_owned()).into())
         } else {
@@ -229,7 +229,7 @@ impl HighlightingAssets {
                     }),
 
                     Some(MappingTarget::MapTo(syntax_name)) => self
-                        .syntax_set
+                        .get_syntax_set()
                         .find_syntax_by_name(syntax_name)
                         .ok_or_else(|| ErrorKind::UnknownSyntax(syntax_name.to_owned()).into()),
 
@@ -250,11 +250,11 @@ impl HighlightingAssets {
     }
 
     fn get_extension_syntax(&self, file_name: &OsStr) -> Option<&SyntaxReference> {
-        self.syntax_set
+        self.get_syntax_set()
             .find_syntax_by_extension(file_name.to_str().unwrap_or_default())
             .or_else(|| {
                 let file_path = Path::new(file_name);
-                self.syntax_set
+                self.get_syntax_set()
                     .find_syntax_by_extension(
                         file_path
                             .extension()
@@ -278,7 +278,7 @@ impl HighlightingAssets {
     fn get_first_line_syntax(&self, reader: &mut InputReader) -> Option<&SyntaxReference> {
         String::from_utf8(reader.first_line.clone())
             .ok()
-            .and_then(|l| self.syntax_set.find_syntax_by_first_line(&l))
+            .and_then(|l| self.get_syntax_set().find_syntax_by_first_line(&l))
     }
 }
 
@@ -351,7 +351,7 @@ mod tests {
 
             self.assets
                 .get_syntax(None, &mut opened_input, &self.syntax_mapping)
-                .unwrap_or_else(|_| self.assets.syntax_set.find_syntax_plain_text())
+                .unwrap_or_else(|_| self.assets.get_syntax_set().find_syntax_plain_text())
                 .name
                 .clone()
         }
@@ -365,7 +365,7 @@ mod tests {
 
             self.assets
                 .get_syntax(None, &mut opened_input, &self.syntax_mapping)
-                .unwrap_or_else(|_| self.assets.syntax_set.find_syntax_plain_text())
+                .unwrap_or_else(|_| self.assets.get_syntax_set().find_syntax_plain_text())
                 .name
                 .clone()
         }
@@ -389,7 +389,7 @@ mod tests {
 
             self.assets
                 .get_syntax(None, &mut opened_input, &self.syntax_mapping)
-                .unwrap_or_else(|_| self.assets.syntax_set.find_syntax_plain_text())
+                .unwrap_or_else(|_| self.assets.get_syntax_set().find_syntax_plain_text())
                 .name
                 .clone()
         }
@@ -547,7 +547,7 @@ mod tests {
         assert_eq!(
             test.assets
                 .get_syntax(None, &mut opened_input, &test.syntax_mapping)
-                .unwrap_or_else(|_| test.assets.syntax_set.find_syntax_plain_text())
+                .unwrap_or_else(|_| test.assets.get_syntax_set().find_syntax_plain_text())
                 .name,
             "SSH Config"
         );
