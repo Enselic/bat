@@ -86,6 +86,25 @@ const IGNORED_SUFFIXES: [&str; 10] = [
 ];
 
 impl HighlightingAssets {
+
+    pub fn new(
+        serialized_syntax_set: Option<SerializedSyntaxSet>,
+        syntax_set: LazyCell<SyntaxSet>,
+        lookup: SyntaxesLookup,
+        syntaxes: RawSyntaxes,
+
+    ) -> Self {
+        HighlightingAssets {
+            serialized_syntax_set,
+            syntax_set,
+            lookup,
+            syntaxes,
+            loaded_syntax_sets: HashMap::new(),
+            theme_set: ThemeSet,
+            fallback_theme: Option<&'static str>,
+        }
+    }
+
     pub fn default_theme() -> &'static str {
         "Monokai Extended"
     }
