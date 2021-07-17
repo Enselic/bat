@@ -1,10 +1,12 @@
 use std::collections::BTreeMap;
+use std::collections::HashMap;
 use std::ffi::OsStr;
 use std::fs::{self, File};
 use std::io::BufReader;
 use std::path::Path;
 
-use syntect::dumps::{dump_to_file, from_binary, from_reader};
+use crate::dep_analysis::*;
+use syntect::dumps::{dump_binary, dump_to_file, from_binary, from_reader};
 use syntect::highlighting::{Theme, ThemeSet};
 use syntect::parsing::{SyntaxReference, SyntaxSet, SyntaxSetBuilder};
 
@@ -35,6 +37,7 @@ impl SerializedSyntaxSet {
     }
 }
 
+
 // #[derive(Debug)]
 // enum SyntaxSetForm {
 //     Serialized(SerializedSyntaxSet),
@@ -45,11 +48,23 @@ impl SerializedSyntaxSet {
 /// Serialized form of `syntax_set`. Not present if we already have a `syntax_set`
 /// Lazy-loaded from `serialized_syntax_set`
 #[derive(Debug)]
+pub enum RawSyntaxes {
+    Owned(Vec<u8>),
+    Referenced(&'static [u8]),
+}
+
+#[derive(Debug)]
 pub struct HighlightingAssets {
     /// Invariant: The serialized version of `syntax_set` if present
     serialized_syntax_set: Option<SerializedSyntaxSet>,
     syntax_set: LazyCell<SyntaxSet>,
+
+    lookup: SyntaxesLookup,
+    syntaxes: RawSyntaxes,
+    loaded_syntax_sets: HashMap<OffsetAndSize, SyntaxSet>,
+
     pub(crate) theme_set: ThemeSet,
+
     fallback_theme: Option<&'static str>,
 }
 
@@ -119,14 +134,96 @@ impl HighlightingAssets {
             );
         }
 
+        let independent_syntaxes = super::dep_analysis::build_independent(&syntax_set_builder);
+
+        eprintln!("");
+        eprintln!("");
+        eprintln!("");
+        eprintln!("The following independent syntax sets were built:");
+
+        let mut data: Vec<u8> = vec![];
+
+        let mut offset = 0;
+
+        let mut lookup = SyntaxesLookup {
+            lookup_by_name: HashMap::new(),
+            lookup_by_ext: HashMap::new(),
+        };
+
+        for syntax_set in independent_syntaxes {
+            eprintln!("");
+
+            let size = Self::handle_independent_syntax(&mut lookup, &syntax_set, offset, &mut data);
+
+            // Update offset for next syntax set
+            offset += size;
+        }
+
+        // Last, add the full fallback SyntaxSet that contains everything
+        let full_syntax_set = syntax_set_builder.build();
+        // TODO: Use None to mark "full syntax set"
+        Self::handle_independent_syntax(&mut lookup, &full_syntax_set, offset, &mut data);
+
         let syntax_set = LazyCell::new();
         syntax_set.fill(syntax_set_builder.build());
+
         Ok(HighlightingAssets {
             syntax_set,
             serialized_syntax_set: None,
+            lookup,
+            syntaxes: RawSyntaxes::Owned(data),
+            loaded_syntax_sets: HashMap::new(),
             theme_set,
             fallback_theme: None,
         })
+    }
+
+    // TODO: Better name on SyntaxesLookup
+    fn handle_independent_syntax(
+        lookup_table: &mut SyntaxesLookup,
+        syntax_set: &SyntaxSet,
+        offset: u64,
+        data: &mut Vec<u8>,
+    ) -> u64 {
+        // bincode this syntax set
+        let syntax_set_bin = dump_binary(&syntax_set);
+        let size = syntax_set_bin.len() as u64;
+
+        // Remember where in the binary blob we can find it when we need it again
+        let offset_and_size = super::dep_analysis::OffsetAndSize { offset, size };
+
+        // Append the binary blob with the data
+        data.extend(syntax_set_bin);
+
+        let mut names = vec![];
+        let mut extensions = vec![];
+
+        // Map all file extensions to the offset and size that we just stored
+        for syntax in syntax_set.syntaxes() {
+            names.push(syntax.name.clone());
+
+            lookup_table
+                .lookup_by_name
+                .insert(syntax.name.clone(), offset_and_size);
+
+            for ext in &syntax.file_extensions {
+                extensions.push(ext.clone());
+
+                lookup_table
+                    .lookup_by_ext
+                    .insert(ext.to_string(), offset_and_size);
+            }
+        }
+
+        eprintln!(
+            "Mapped
+        {:?}
+        {:?}
+        to {:?}",
+            names, extensions, offset_and_size
+        );
+
+        return size;
     }
 
     pub fn from_cache(cache_path: &Path) -> Result<Self> {
@@ -135,10 +232,12 @@ impl HighlightingAssets {
             &cache_path.join("syntaxes.bin"),
             "syntax set",
         )?);
+
         Ok(HighlightingAssets {
             // TODO: Load in serialized form
             syntax_set,
             serialized_syntax_set: None,
+            lookup: asset_from_cache(&cache_path.join("lookup.bin"), "theme set")?
             theme_set: asset_from_cache(&cache_path.join("themes.bin"), "theme set")?,
             fallback_theme: None,
         })
@@ -226,6 +325,24 @@ impl HighlightingAssets {
             }
             None => self.get_extension_syntax(file_name.as_os_str()),
         }
+    }
+
+    pub fn find_syntax_by_name(&self, name: &str) -> Option<&SyntaxReference> {
+        let offset_and_size = self.lookup.lookup_by_name.get(name);
+        if let Some(offset_and_size) = offset_and_size {
+            let OffsetAndSize { offset, size } = *offset_and_size;
+            let end = offset + size;
+            let ref_to_data = match self.syntaxes {
+                RawSyntaxes::Owned(owned) => &owned,
+                RawSyntaxes::Referenced(referenced) => referenced,
+            };
+            let slice_of_syntax_set = &ref_to_data[offset as usize..end as usize];
+            let syntax_set = from_binary(slice_of_syntax_set);
+            self.loaded_syntax_sets.insert(*offset_and_size, syntax_set);
+            return syntax_set.find_syntax_by_name(name);
+        }
+        // TODO: Make single return point and deduplicate
+        return None
     }
 
     pub(crate) fn get_theme(&self, theme: &str) -> &Theme {
@@ -328,6 +445,25 @@ impl HighlightingAssets {
                         None
                     })
             })
+    }
+
+    fn find_syntax_by_extension(&self, ext: &str) -> Option<&SyntaxReference> {
+        let offset_and_size = self.lookup.lookup_by_ext.get(ext);
+        if let Some(offset_and_size) = offset_and_size {
+            let OffsetAndSize { offset, size } = *offset_and_size;
+            let end = offset + size;
+            let ref_to_data = match self.syntaxes {
+                RawSyntaxes::Owned(owned) => &owned,
+                RawSyntaxes::Referenced(referenced) => referenced,
+            };
+            let slice_of_syntax_set = &ref_to_data[offset as usize..end as usize];
+            let syntax_set = from_binary(slice_of_syntax_set);
+            self.loaded_syntax_sets.insert(*offset_and_size, syntax_set);
+            return syntax_set.find_syntax_by_extension(ext);
+        }
+        // TODO: Make single return point and deduplicate
+        return None
+
     }
 
     fn get_first_line_syntax(&self, reader: &mut InputReader) -> Option<&SyntaxReference> {
