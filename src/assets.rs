@@ -16,9 +16,39 @@ use crate::error::*;
 use crate::input::{InputReader, OpenedInput, OpenedInputKind};
 use crate::syntax_mapping::{MappingTarget, SyntaxMapping};
 
+use lazycell::LazyCell;
+
+/// A SyntaxSet in a serialized form, i.e. bincoded and flate2 compressed.
+/// We keep it in this format since we want to load it lazily.
+#[derive(Debug)]
+enum SerializedSyntaxSet {
+    Owned(Vec<u8>),
+    Referenced(&'static [u8]),
+}
+
+impl SerializedSyntaxSet {
+    fn deserialize(&self) -> SyntaxSet {
+        match self {
+            SerializedSyntaxSet::Referenced(data) => asset_from_reader(*data, "lazy loaded syntax set").expect("data compiled to binary is not corrupt"),
+            _ => panic!("not yet imlpemented"),
+        }
+    }
+}
+
+// #[derive(Debug)]
+// enum SyntaxSetForm {
+//     Serialized(SerializedSyntaxSet),
+//     Deserialized(SyntaxSet),
+// }
+
+/// Old comments:
+/// Serialized form of `syntax_set`. Not present if we already have a `syntax_set`
+/// Lazy-loaded from `serialized_syntax_set`
 #[derive(Debug)]
 pub struct HighlightingAssets {
-    syntax_set: SyntaxSet,
+    /// Invariant: The serialized version of `syntax_set` if present
+    serialized_syntax_set: Option<SerializedSyntaxSet>,
+    syntax_set: LazyCell<SyntaxSet>,
     pub(crate) theme_set: ThemeSet,
     fallback_theme: Option<&'static str>,
 }
@@ -89,23 +119,37 @@ impl HighlightingAssets {
             );
         }
 
+        let syntax_set = LazyCell::new();
+        syntax_set.fill(syntax_set_builder.build());
         Ok(HighlightingAssets {
-            syntax_set: syntax_set_builder.build(),
+            syntax_set,
+            serialized_syntax_set: None,
             theme_set,
             fallback_theme: None,
         })
     }
 
     pub fn from_cache(cache_path: &Path) -> Result<Self> {
+        let syntax_set = LazyCell::new();
+        syntax_set.fill(asset_from_cache(
+            &cache_path.join("syntaxes.bin"),
+            "syntax set",
+        )?);
         Ok(HighlightingAssets {
-            syntax_set: asset_from_cache(&cache_path.join("syntaxes.bin"), "syntax set")?,
+            // TODO: Load in serialized form
+            syntax_set,
+            serialized_syntax_set: None,
             theme_set: asset_from_cache(&cache_path.join("themes.bin"), "theme set")?,
             fallback_theme: None,
         })
     }
 
+    fn get_serialized_integrated_syntaxset() -> &'static [u8] {
+        include_bytes!("../assets/syntaxes.bin")
+    }
+
     fn get_integrated_syntaxset() -> SyntaxSet {
-        from_binary(include_bytes!("../assets/syntaxes.bin"))
+        from_binary(get_serialized_integrated_syntaxset())
     }
 
     fn get_integrated_themeset() -> ThemeSet {
@@ -113,11 +157,12 @@ impl HighlightingAssets {
     }
 
     pub fn from_binary() -> Self {
-        let syntax_set = Self::get_integrated_syntaxset();
+        let serialized_syntax_set = Some(SerializedSyntaxSet::Referenced(Self::get_serialized_integrated_syntaxset()));
         let theme_set = Self::get_integrated_themeset();
 
         HighlightingAssets {
-            syntax_set,
+            syntax_set: LazyCell::new(),
+            serialized_syntax_set,
             theme_set,
             fallback_theme: None,
         }
@@ -147,7 +192,17 @@ impl HighlightingAssets {
     }
 
     pub(crate) fn get_syntax_set(&self) -> &SyntaxSet {
-        &self.syntax_set
+        if !self.syntax_set.filled() {
+            self.syntax_set.fill(self.serialized_syntax_set.as_ref().unwrap().deserialize());
+        }
+        self.syntax_set.borrow().unwrap()
+        // if let SyntaxSetForm::Serialized(ref serialized_syntax_set) = *self.syntax_set.borrow() {
+        //     self.syntax_set.replace(SyntaxSetForm::Deserialized(serialized_syntax_set.deserialize()));
+        // }
+        // match *self.syntax_set.borrow() {
+        //     SyntaxSetForm::Deserialized(ref syntax_set) => syntax_set,
+        //     SyntaxSetForm::Serialized(_) => panic!("impossible, we just deserialized"),
+        // }
     }
 
     pub fn syntaxes(&self) -> &[SyntaxReference] {
@@ -303,8 +358,14 @@ fn asset_from_cache<T: serde::de::DeserializeOwned>(path: &Path, description: &s
             path.to_string_lossy()
         )
     })?;
-    from_reader(BufReader::new(asset_file))
-        .chain_err(|| format!("Could not parse cached {}", description))
+    asset_from_reader(BufReader::new(asset_file), description)
+}
+
+fn asset_from_reader<T: serde::de::DeserializeOwned, R: std::io::BufRead>(
+    input: R,
+    description: &str,
+) -> Result<T> {
+    from_reader(input).chain_err(|| format!("Could not parse {}", description))
 }
 
 #[cfg(test)]
