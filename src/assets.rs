@@ -149,7 +149,7 @@ impl HighlightingAssets {
     }
 
     fn get_integrated_syntaxset() -> SyntaxSet {
-        from_binary(get_serialized_integrated_syntaxset())
+        from_binary(Self::get_serialized_integrated_syntaxset())
     }
 
     fn get_integrated_themeset() -> ThemeSet {
