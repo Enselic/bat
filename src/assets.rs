@@ -92,7 +92,7 @@ impl HighlightingAssets {
         syntax_set: LazyCell<SyntaxSet>,
         lookup: SyntaxesLookup,
         syntaxes: RawSyntaxes,
-
+        theme_set: ThemeSet,
     ) -> Self {
         HighlightingAssets {
             serialized_syntax_set,
@@ -100,8 +100,8 @@ impl HighlightingAssets {
             lookup,
             syntaxes,
             loaded_syntax_sets: HashMap::new(),
-            theme_set: ThemeSet,
-            fallback_theme: Option<&'static str>,
+            theme_set,
+            fallback_theme: None,
         }
     }
 
@@ -252,14 +252,13 @@ impl HighlightingAssets {
             "syntax set",
         )?);
 
-        Ok(HighlightingAssets {
+        Ok(HighlightingAssets::new(
             // TODO: Load in serialized form
             syntax_set,
-            serialized_syntax_set: None,
-            lookup: asset_from_cache(&cache_path.join("lookup.bin"), "theme set")?
-            theme_set: asset_from_cache(&cache_path.join("themes.bin"), "theme set")?,
-            fallback_theme: None,
-        })
+            None,
+            asset_from_cache(&cache_path.join("lookup.bin"), "theme set")?
+            asset_from_cache(&cache_path.join("themes.bin"), "theme set")?,
+        ))
     }
 
     fn get_serialized_integrated_syntaxset() -> &'static [u8] {
@@ -278,12 +277,12 @@ impl HighlightingAssets {
         let serialized_syntax_set = Some(SerializedSyntaxSet::Referenced(Self::get_serialized_integrated_syntaxset()));
         let theme_set = Self::get_integrated_themeset();
 
-        HighlightingAssets {
+        HighlightingAssets::new(
             syntax_set: LazyCell::new(),
             serialized_syntax_set,
             theme_set,
             fallback_theme: None,
-        }
+        )
     }
 
     pub fn save_to_cache(&self, target_dir: &Path, current_version: &str) -> Result<()> {
