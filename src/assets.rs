@@ -495,9 +495,15 @@ impl HighlightingAssets {
             .and_then(|offset_and_size| {
                 self.independent_syntax_sets.get(offset_and_size)
                 .and_then(|syntax_set_cell| {
-                    syntax_set_cell.borrow_with(|| {
+                    let independent_syntax_set = syntax_set_cell.borrow_with(|| {
                         self.get_independent_syntax_set_with_offset_and_size(offset_and_size).expect("data not corrupt")
-                    }).find_syntax_by_token(token)
+                    });
+                    for ss in independent_syntax_set.syntaxes() {
+                        eprintln!("{}", ss.name);
+                    }
+                    let result = independent_syntax_set.find_syntax_by_token(token);
+                    eprintln!("token={}, {:?}", token, result);
+                    result
                 })
             })
         // TODO: Fallback to full_syntax_set?
@@ -513,9 +519,8 @@ impl HighlightingAssets {
             SerializedIndependentSyntaxSets::Owned(ref owned) => &owned[..],
             SerializedIndependentSyntaxSets::Referenced(referenced) => referenced,
         };
-//        let slice_of_syntax_set = &ref_to_data[offset..end];
         let slice_of_syntax_set = &ref_to_data[offset..end];
-        eprintln!("Loading SyntaxSet at {:?}, from_binary gets {:?}", *offset_and_size, slice_of_syntax_set);
+        //eprintln!("Loading SyntaxSet at {:?}, from_binary gets {:?}", *offset_and_size, slice_of_syntax_set);
         Some(from_binary(slice_of_syntax_set))
     }
 
