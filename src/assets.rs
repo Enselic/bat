@@ -53,6 +53,15 @@ pub enum SerializedIndependentSyntaxSets {
     Referenced(&'static [u8]),
 }
 
+impl SerializedIndependentSyntaxSets {
+    fn save(&self, path: &Path) -> Result<()> {
+        match self {
+            SerializedIndependentSyntaxSets::Owned(ref data) => std::fs::write(path, data),
+            SerializedIndependentSyntaxSets::Referenced(data) => std::fs::write(path, data),
+        }.chain_err(|| "failure")
+    }
+}
+
 use serde::{Deserialize, Serialize};
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct IndependentSyntaxSetsMap {
@@ -315,6 +324,12 @@ impl HighlightingAssets {
             &target_dir.join("syntaxes.bin"),
             "syntax set",
         )?;
+        asset_to_cache(
+            &self.independent_syntax_sets_map,
+            &target_dir.join("independent_syntax_sets_map.bin"),
+            "independent syntax sets map",
+        )?;
+        self.serialized_independent_syntax_sets.save(&target_dir.join("independent_syntax_sets.bin"))?;
 
         print!(
             "Writing metadata to folder {} ... ",
@@ -488,7 +503,7 @@ impl HighlightingAssets {
         &self,
         offset_and_size: &OffsetAndSize,
     ) -> Option<SyntaxSet> {
-        eprintln!("Loading SyntaxSet at {:?}", *offset_and_size)
+        eprintln!("Loading SyntaxSet at {:?}", *offset_and_size);
         let OffsetAndSize { offset, size } = *offset_and_size;
         let end = offset + size;
         let ref_to_data: &[u8] = match &self.serialized_independent_syntax_sets {
