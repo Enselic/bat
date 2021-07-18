@@ -509,7 +509,7 @@ impl HighlightingAssets {
         // TODO: Fallback to full_syntax_set?
     }
 
-    fn find_syntax_set_by_token(&self, token: &str) -> Option<&SyntaxSet> {
+    pub(crate) fn find_syntax_set_by_token(&self, token: &str) -> Option<&SyntaxSet> {
         self.find_offset_and_size_by_token(token)
             .and_then(|offset_and_size| {
                 self.independent_syntax_sets.get(offset_and_size)

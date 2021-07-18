@@ -192,7 +192,7 @@ impl<'a> InteractivePrinter<'a> {
             #[cfg(feature = "git")]
             line_changes,
             highlighter,
-            syntax_set: assets.find_syntax_set_by_token(config.language),
+            syntax_set: assets.find_syntax_set_by_token(config.language.unwrap()).unwrap(),
             background_color_highlight,
         })
     }
