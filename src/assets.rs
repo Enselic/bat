@@ -262,7 +262,7 @@ impl HighlightingAssets {
         include_bytes!("../assets/independent_syntax_sets.bin")
     }
 
-    fn get_serialized_integrated_independent_syntax_sets_map() -> SerializedSyntaxSetsMap {
+    fn get_serialized_integrated_independent_syntax_sets_map() -> IndependentSyntaxSetsMap {
         from_binary(include_bytes!("../assets/independent_syntax_sets_map.bin"))
     }
 
