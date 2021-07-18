@@ -241,17 +241,15 @@ impl HighlightingAssets {
     }
 
     pub fn from_cache(cache_path: &Path) -> Result<Self> {
-        let full_syntax_set = LazyCell::new();
-        full_syntax_set.fill(asset_from_cache(
-            &cache_path.join("syntaxes.bin"),
-            "syntax set",
-        )?);
-
         Ok(HighlightingAssets::new(
-            // TODO: Load in serialized form
-            full_syntax_set,
-            None,
-            asset_from_cache(&cache_path.join("independent_syntax_sets_map.bin"), "theme set")?
+            LazyCell::new(), // full_syntax_set
+            Some(SerializedSyntaxSet::Owned(
+                asset_data_from_cache(&cache_path.join("syntaxes.bin"), "syntax set")?
+            )),
+            SerializedIndependentSyntaxSets::Owned(
+                asset_data_from_cache(&cache_path.join("independent_syntax_sets.bin"), "independent syntax sets")?
+            ),
+            asset_from_cache(&cache_path.join("independent_syntax_sets_map.bin"), "independent syntax sets map")?,
             asset_from_cache(&cache_path.join("themes.bin"), "theme set")?,
         ))
     }
@@ -269,12 +267,14 @@ impl HighlightingAssets {
     }
 
     pub fn from_binary() -> Self {
- full_       let serialized_syntax_set = Some(SerializedSyntaxSet::Referenced(Self::get_serialized_integrated_syntaxset()));
+ let serialized_syntax_set = ;
         let theme_set = Self::get_integrated_themeset();
 
         HighlightingAssets::new(
-            full_syntax_set: LazyCell::new(),
-            serialized_full_syntax_set,
+            LazyCell::new(), // full_syntax_set
+            Some(SerializedSyntaxSet::Referenced(
+                Self::get_serialized_integrated_syntaxset()
+            ),
             theme_set,
             fallback_theme: None,
         )
