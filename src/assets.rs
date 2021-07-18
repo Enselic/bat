@@ -70,7 +70,7 @@ pub struct HighlightingAssets {
 
     /// We only want to load an independent SyntaxSet once. Here we keep
     /// track of which ones we loaded already.
-    independent_syntax_sets: LazyCell<HashMap<OffsetAndSize, SyntaxSet>>,
+    independent_syntax_sets: HashMap<OffsetAndSize, LazyCell<SyntaxSet>>,
     serialized_independent_syntax_sets: SerializedIndependentSyntaxSets,
     independent_syntax_sets_map: IndependentSyntaxSetsMap,
 
@@ -103,10 +103,15 @@ impl HighlightingAssets {
         independent_syntax_sets_map: IndependentSyntaxSetsMap,
         theme_set: ThemeSet,
     ) -> Self {
+        // Prepare the map so we can lazily load syntaxes without a mut reference
+        let mut independent_syntax_sets = HashMap::new();
+        for value in independent_syntax_sets_map.lookup_by_ext.values() {
+            independent_syntax_sets.insert(*value, LazyCell::new());
+        }
         HighlightingAssets {
             full_syntax_set,
             serialized_full_syntax_set,
-            independent_syntax_sets: LazyCell::new(),
+            independent_syntax_sets,
             serialized_independent_syntax_sets,
             independent_syntax_sets_map,
             theme_set,
@@ -382,8 +387,7 @@ impl HighlightingAssets {
         mapping: &SyntaxMapping,
     ) -> Result<&SyntaxReference> {
         if let Some(language) = language {
-            self.get_syntax_set()
-                .find_syntax_by_token(language)
+            self.find_syntax_by_token(language)
                 .ok_or_else(|| ErrorKind::UnknownSyntax(language.to_owned()).into())
         } else {
             let line_syntax = self.get_first_line_syntax(&mut input.reader);
@@ -461,7 +465,21 @@ impl HighlightingAssets {
             })
     }
 
-    fn find_syntax_by_extension(&self, ext: &str) -> Option<&SyntaxReference> {
+    fn find_offset_and_size_by_token(&self, token: &str) -> OffsetAndSize {
+        {
+            let ext_res = self.find_syntax_by_extension(s);
+            if ext_res.is_some() {
+                return ext_res;
+            }
+        }
+        self.syntaxes.iter().rev().find(|&syntax| syntax.name.eq_ignore_ascii_case(s))
+    }
+
+    fn find_syntax_by_token(&self, token: &str) -> Option<&SyntaxReference> {
+        let offset_and_size = self.find_offset_and_size_by_token(token);
+        self.independent_syntax_sets.get(offset_and_size).unwrap().borrow_with(|| {
+
+        });
         let offset_and_size = self.independent_syntax_sets_map.lookup_by_ext.get(ext);
         if let Some(offset_and_size) = offset_and_size {
             let OffsetAndSize { offset, size } = *offset_and_size;
@@ -472,11 +490,11 @@ impl HighlightingAssets {
             };
             let slice_of_syntax_set = &ref_to_data[offset as usize..end as usize];
             let independent_syntax_set = from_binary(slice_of_syntax_set);
-            let sets = self.independent_syntax_sets.borrow_mut_with(|| HashMap::new());
-            sets.insert(*offset_and_size, independent_syntax_set);
+            let sets = (|| HashMap::new());
             return independent_syntax_set.find_syntax_by_extension(ext);
         }
         // TODO: Make single return point and deduplicate
+        // TODO: Use full if missing from independent
         return self.get_syntax_set().find_syntax_by_extension(ext);
     }
 
