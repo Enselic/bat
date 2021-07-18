@@ -198,7 +198,7 @@ impl HighlightingAssets {
         }
 
         let full_syntax_set = LazyCell::new();
-        full_syntax_set.fill(syntax_set_builder.build());
+        full_syntax_set.fill(syntax_set_builder.build()).expect("this shall never fail");
 
         Ok(HighlightingAssets::new(
             full_syntax_set,
@@ -488,6 +488,7 @@ impl HighlightingAssets {
         &self,
         offset_and_size: &OffsetAndSize,
     ) -> Option<SyntaxSet> {
+        eprintln!("Loading SyntaxSet at {:?}", *offset_and_size)
         let OffsetAndSize { offset, size } = *offset_and_size;
         let end = offset + size;
         let ref_to_data: &[u8] = match &self.serialized_independent_syntax_sets {
