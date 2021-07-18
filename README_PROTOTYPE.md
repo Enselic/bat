@@ -8,6 +8,8 @@ What works:
 * Significantly faster startup speed for small syntaxes, but also improvments for large syntaxes that embemds other syntaxes
 
 What does not work:
+* lookup by first line
+* lookup by file extension
 * Size of bat binary significantly larger
 * Loading syntaxes from a user-cache
 * Public API compatiblity
