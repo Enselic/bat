@@ -239,9 +239,7 @@ impl HighlightingAssets {
             for ext in &syntax.file_extensions {
                 extensions.push(ext.clone());
 
-                lookup_table
-                    .by_ext
-                    .insert(ext.to_string(), offset_and_size);
+                lookup_table.by_ext.insert(ext.to_string(), offset_and_size);
             }
         }
 
@@ -466,24 +464,32 @@ impl HighlightingAssets {
     }
 
     fn find_offset_and_size_by_token(&self, s: &str) -> Option<&OffsetAndSize> {
-        self.independent_syntax_sets_map.by_ext.get(s)
-        .or_else(|| self.independent_syntax_sets_map.by_name.get(&s.to_ascii_lowercase()))
+        self.independent_syntax_sets_map.by_ext.get(s).or_else(|| {
+            self.independent_syntax_sets_map
+                .by_name
+                .get(&s.to_ascii_lowercase())
+        })
     }
 
     fn find_syntax_by_token(&self, token: &str) -> Option<&SyntaxReference> {
-        let offset_and_size = self.find_offset_and_size_by_token(token)
-        .and_then(|offset_and_size| {
-            self.independent_syntax_sets.get(offset_and_size)
-            .and_then(|independent_syntax_set| independent_syntax_set.borrow_with(|| {
-                self.get_independent_syntax_set_with_offset_and_size(offset_and_size)
-            }))
-        })
+        let offset_and_size =
+            self.find_offset_and_size_by_token(token)
+                .and_then(|offset_and_size| {
+                    let foo = self.independent_syntax_sets.get(offset_and_size);
+                    foo.sdfsdf;
+                    foo.and_then(|independent_syntax_set_lazy_cell| {
+                        independent_syntax_set_lazy_cell.borrow_with(|| {
+                            self.get_independent_syntax_set_with_offset_and_size(offset_and_size)
+                        })
+                    })
+                });
         // TODO: Fallback to full_syntax_set?
+        ()
     }
 
     fn get_independent_syntax_set_with_offset_and_size(
         &self,
-        offset_and_size: &OffsetAndSize
+        offset_and_size: &OffsetAndSize,
     ) -> Option<SyntaxSet> {
         let OffsetAndSize { offset, size } = *offset_and_size;
         let end = offset + size;

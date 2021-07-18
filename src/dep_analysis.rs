@@ -4,30 +4,19 @@
 
 */
 
-use std::collections::{
-    HashSet,
-};
+use std::collections::HashSet;
 use syntect::parsing::syntax_definition::{
-    ContextReference,
-    SyntaxDefinition,
-    MatchOperation,
-    Pattern,
+    ContextReference, MatchOperation, Pattern, SyntaxDefinition,
 };
-use syntect::parsing::{
-    SyntaxSet,
-    SyntaxSetBuilder,
-};
+use syntect::parsing::{SyntaxSet, SyntaxSetBuilder};
 
 use serde::{Deserialize, Serialize};
-
-
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct SyntaxDefinitionWithDeps {
     syntax_definition: SyntaxDefinition,
     deps: Vec<ContextReference>,
 }
-
 
 // TODO: Use references instead of copies
 fn construct_direct_dependency_map(
@@ -55,26 +44,35 @@ fn construct_direct_dependency_map(
                 match *pattern {
                     Pattern::Include(ref context_reference) => {
                         handle_context_reference(&mut syntax_def_with_deps.deps, context_reference);
-                    },
+                    }
                     Pattern::Match(ref match_ref) => {
                         if let MatchOperation::Push(ref context_references) = match_ref.operation {
                             for context_reference in context_references {
-                                handle_context_reference(&mut syntax_def_with_deps.deps, context_reference);
+                                handle_context_reference(
+                                    &mut syntax_def_with_deps.deps,
+                                    context_reference,
+                                );
                             }
                         }
-                    },
+                    }
                 }
             }
         }
 
         // TODO: Use references instead of clones
         context_ref_to_syntax_def.push((
-            ContextReference::File { name: name.clone(), sub_context: None },
+            ContextReference::File {
+                name: name.clone(),
+                sub_context: None,
+            },
             syntax_def_with_deps.clone(),
         ));
 
         context_ref_to_syntax_def.push((
-            ContextReference::ByScope { scope: *scope, sub_context: None },
+            ContextReference::ByScope {
+                scope: *scope,
+                sub_context: None,
+            },
             syntax_def_with_deps.clone(),
         ));
     }
@@ -84,21 +82,20 @@ fn construct_direct_dependency_map(
 
 fn handle_context_reference(
     deps: &mut Vec<ContextReference>,
-    context_reference: &ContextReference
+    context_reference: &ContextReference,
 ) {
     match *context_reference {
         ContextReference::File { ref name, .. } => {
             eprintln!("    {}", name);
             deps.push(context_reference.clone());
-        },
+        }
         ContextReference::ByScope { ref scope, .. } => {
             eprintln!("    {}", scope.build_string());
             deps.push(context_reference.clone());
-        },
-        _ => {},
+        }
+        _ => {}
     }
 }
-
 
 /// Returns a vec of indepdent [`SyntaxSet`]s.
 /// Enables improved startup time for some projects.
@@ -106,19 +103,23 @@ fn handle_context_reference(
 pub fn build_independent(syntax_set_builder: &SyntaxSetBuilder) -> Vec<SyntaxSet> {
     let mut result = vec![];
 
-    let mut syntax_defs_with_deps = syntax_set_builder.syntaxes().iter().map(|syntax_definition| {
-        SyntaxDefinitionWithDeps {
+    let mut syntax_defs_with_deps = syntax_set_builder
+        .syntaxes()
+        .iter()
+        .map(|syntax_definition| SyntaxDefinitionWithDeps {
             syntax_definition: syntax_definition.clone(),
             deps: vec![],
-        }
-    }).collect::<Vec<SyntaxDefinitionWithDeps>>();
+        })
+        .collect::<Vec<SyntaxDefinitionWithDeps>>();
 
     let context_ref_to_syntax_def = construct_direct_dependency_map(&mut syntax_defs_with_deps);
 
     // Second pass: Transitively group dependencies and build SyntaxSets from them
     for syn_def_and_deps in syntax_defs_with_deps {
-
-        eprintln!("Figuring out transitively deps for {}", syn_def_and_deps.syntax_definition.name);
+        eprintln!(
+            "Figuring out transitively deps for {}",
+            syn_def_and_deps.syntax_definition.name
+        );
 
         let mut builder = SyntaxSetBuilder::new();
 
@@ -128,7 +129,6 @@ pub fn build_independent(syntax_set_builder: &SyntaxSetBuilder) -> Vec<SyntaxSet
         // We store in ascii lowercase so we can simulate SyntaxSet::find_syntax_by_token() more
         // easily, which does a case insensitive comparisions with names
         added_names.insert(syn_def_and_deps.syntax_definition.name.to_ascii_lowercase());
-
 
         let mut deps_left = syn_def_and_deps.deps.clone();
 
@@ -151,10 +151,13 @@ pub fn build_independent(syntax_set_builder: &SyntaxSetBuilder) -> Vec<SyntaxSet
                         }
                         added_names.insert(syntax_definition.name.clone());
                     }
-                },
+                }
                 None => {
-                    eprintln!("    syntax for {:?} not found, ignoring and hoping for the best", dep);
-                },
+                    eprintln!(
+                        "    syntax for {:?} not found, ignoring and hoping for the best",
+                        dep
+                    );
+                }
             }
         }
 
