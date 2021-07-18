@@ -258,6 +258,10 @@ impl HighlightingAssets {
         include_bytes!("../assets/syntaxes.bin")
     }
 
+    fn get_serialized_integrated_independent_syntax_sets() -> &'static [u8] {
+        include_bytes!("../assets/syntaxes.bin")
+    }
+
     fn get_integrated_syntaxset() -> SyntaxSet {
         from_binary(Self::get_serialized_integrated_syntaxset())
     }
@@ -267,16 +271,12 @@ impl HighlightingAssets {
     }
 
     pub fn from_binary() -> Self {
- let serialized_syntax_set = ;
-        let theme_set = Self::get_integrated_themeset();
-
         HighlightingAssets::new(
             LazyCell::new(), // full_syntax_set
             Some(SerializedSyntaxSet::Referenced(
                 Self::get_serialized_integrated_syntaxset()
-            ),
-            theme_set,
-            fallback_theme: None,
+            )),
+            Self::get_integrated_themeset(),
         )
     }
 
