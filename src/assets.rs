@@ -5,7 +5,6 @@ use std::fs::{self, File};
 use std::io::BufReader;
 use std::path::Path;
 
-use crate::dep_analysis::*;
 use syntect::dumps::{dump_binary, dump_to_file, from_binary, from_reader};
 use syntect::highlighting::{Theme, ThemeSet};
 use syntect::parsing::{SyntaxReference, SyntaxSet, SyntaxSetBuilder};
@@ -26,6 +25,14 @@ use lazycell::LazyCell;
 enum SerializedSyntaxSet {
     Owned(Vec<u8>),
     Referenced(&'static [u8]),
+}
+
+// Offset into a binary blob where the start of a syntax set can be found
+// Size is the size.
+#[derive(Debug, Eq, PartialEq, Clone, Copy, Deserialize, Serialize, Hash)]
+pub struct OffsetAndSize {
+    pub offset: usize,
+    pub size: usize,
 }
 
 impl SerializedSyntaxSet {
@@ -99,7 +106,7 @@ impl HighlightingAssets {
         HighlightingAssets {
             full_syntax_set,
             serialized_full_syntax_set,
-            independent_syntax_sets: HashMap::new(),
+            independent_syntax_sets: LazyCell::new(),
             serialized_independent_syntax_sets,
             independent_syntax_sets_map,
             theme_set,
@@ -188,29 +195,27 @@ impl HighlightingAssets {
         let full_syntax_set = LazyCell::new();
         full_syntax_set.fill(syntax_set_builder.build());
 
-        Ok(HighlightingAssets {
+        Ok(HighlightingAssets::new(
             full_syntax_set,
-            serialized_full_syntax_set: None, // No need to serialize until we know it is needed
-            independent_syntax_sets: HashMap::new(),
-            serialized_independent_syntax_sets: SerializedIndependentSyntaxSets::Owned(data),
+            None, // serialized_full_syntax_set
+            SerializedIndependentSyntaxSets::Owned(data),
             independent_syntax_sets_map,
             theme_set,
-            fallback_theme: None,
-        })
+        ))
     }
 
     fn handle_independent_syntax(
         lookup_table: &mut IndependentSyntaxSetsMap,
         independent_syntax_set: &SyntaxSet,
-        offset: u64,
+        offset: usize,
         data: &mut Vec<u8>,
-    ) -> u64 {
+    ) -> usize {
         // bincode this syntax set
         let syntax_set_bin = dump_binary(&independent_syntax_set);
-        let size = syntax_set_bin.len() as u64;
+        let size = syntax_set_bin.len();
 
         // Remember where in the binary blob we can find it when we need it again
-        let offset_and_size = super::dep_analysis::OffsetAndSize { offset, size };
+        let offset_and_size = OffsetAndSize { offset, size };
 
         // Append the binary blob with the data
         data.extend(syntax_set_bin);
@@ -466,13 +471,13 @@ impl HighlightingAssets {
                 SerializedIndependentSyntaxSets::Referenced(referenced) => referenced,
             };
             let slice_of_syntax_set = &ref_to_data[offset as usize..end as usize];
-            let full_syntax_set = from_binary(slice_of_syntax_set);
-            self.independent_syntax_sets
-                .insert(*offset_and_size, full_syntax_set);
-            return full_syntax_set.find_syntax_by_extension(ext);
+            let independent_syntax_set = from_binary(slice_of_syntax_set);
+            let sets = self.independent_syntax_sets.borrow_mut_with(|| HashMap::new());
+            sets.insert(*offset_and_size, independent_syntax_set);
+            return independent_syntax_set.find_syntax_by_extension(ext);
         }
         // TODO: Make single return point and deduplicate
-        return None;
+        return self.get_syntax_set().find_syntax_by_extension(ext);
     }
 
     fn get_first_line_syntax(&self, reader: &mut InputReader) -> Option<&SyntaxReference> {
