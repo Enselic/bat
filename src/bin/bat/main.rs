@@ -23,7 +23,7 @@ use crate::{
 };
 
 use assets::{
-    assets_from_cache_or_binary, assets_from_cache_or_binary_for_input, cache_dir, clear_assets,
+    assets_from_cache_or_binary, cache_dir, clear_assets,
     config_dir,
 };
 use clap::crate_version;

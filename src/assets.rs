@@ -472,19 +472,16 @@ impl HighlightingAssets {
     }
 
     fn find_syntax_by_token(&self, token: &str) -> Option<&SyntaxReference> {
-        let offset_and_size =
-            self.find_offset_and_size_by_token(token)
-                .and_then(|offset_and_size| {
-                    let foo = self.independent_syntax_sets.get(offset_and_size);
-                    foo.sdfsdf;
-                    foo.and_then(|independent_syntax_set_lazy_cell| {
-                        independent_syntax_set_lazy_cell.borrow_with(|| {
-                            self.get_independent_syntax_set_with_offset_and_size(offset_and_size)
-                        })
-                    })
-                });
+        self.find_offset_and_size_by_token(token)
+            .and_then(|offset_and_size| {
+                self.independent_syntax_sets.get(offset_and_size)
+                .and_then(|syntax_set_cell| {
+                    syntax_set_cell.borrow_with(|| {
+                        self.get_independent_syntax_set_with_offset_and_size(offset_and_size).expect("data not corrupt")
+                    }).find_syntax_by_token(token)
+                })
+            })
         // TODO: Fallback to full_syntax_set?
-        ()
     }
 
     fn get_independent_syntax_set_with_offset_and_size(
