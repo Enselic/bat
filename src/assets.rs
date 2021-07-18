@@ -56,8 +56,8 @@ pub enum SerializedIndependentSyntaxSets {
 use serde::{Deserialize, Serialize};
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct IndependentSyntaxSetsMap {
-    pub lookup_by_name: HashMap<String, OffsetAndSize>,
-    pub lookup_by_ext: HashMap<String, OffsetAndSize>,
+    pub by_name: HashMap<String, OffsetAndSize>,
+    pub by_ext: HashMap<String, OffsetAndSize>,
 }
 
 #[derive(Debug)]
@@ -105,7 +105,7 @@ impl HighlightingAssets {
     ) -> Self {
         // Prepare the map so we can lazily load syntaxes without a mut reference
         let mut independent_syntax_sets = HashMap::new();
-        for value in independent_syntax_sets_map.lookup_by_ext.values() {
+        for value in independent_syntax_sets_map.by_ext.values() {
             independent_syntax_sets.insert(*value, LazyCell::new());
         }
         HighlightingAssets {
@@ -179,8 +179,8 @@ impl HighlightingAssets {
         let mut offset = 0;
 
         let mut independent_syntax_sets_map = IndependentSyntaxSetsMap {
-            lookup_by_name: HashMap::new(),
-            lookup_by_ext: HashMap::new(),
+            by_name: HashMap::new(),
+            by_ext: HashMap::new(),
         };
 
         for independent_syntax_set in independent_syntax_sets {
@@ -233,14 +233,14 @@ impl HighlightingAssets {
             names.push(syntax.name.clone());
 
             lookup_table
-                .lookup_by_name
+                .by_name
                 .insert(syntax.name.clone(), offset_and_size);
 
             for ext in &syntax.file_extensions {
                 extensions.push(ext.clone());
 
                 lookup_table
-                    .lookup_by_ext
+                    .by_ext
                     .insert(ext.to_string(), offset_and_size);
             }
         }
@@ -480,7 +480,7 @@ impl HighlightingAssets {
         self.independent_syntax_sets.get(offset_and_size).unwrap().borrow_with(|| {
 
         });
-        let offset_and_size = self.independent_syntax_sets_map.lookup_by_ext.get(ext);
+        let offset_and_size = self.independent_syntax_sets_map.by_ext.get(ext);
         if let Some(offset_and_size) = offset_and_size {
             let OffsetAndSize { offset, size } = *offset_and_size;
             let end = offset + size;
