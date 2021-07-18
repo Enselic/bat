@@ -259,7 +259,11 @@ impl HighlightingAssets {
     }
 
     fn get_serialized_integrated_independent_syntax_sets() -> &'static [u8] {
-        include_bytes!("../assets/syntaxes.bin")
+        include_bytes!("../assets/independent_syntax_sets.bin")
+    }
+
+    fn get_serialized_integrated_independent_syntax_sets_map() -> &'static [u8] {
+        include_bytes!("../assets/independent_syntax_sets_map.bin")
     }
 
     fn get_integrated_syntaxset() -> SyntaxSet {
@@ -276,6 +280,9 @@ impl HighlightingAssets {
             Some(SerializedSyntaxSet::Referenced(
                 Self::get_serialized_integrated_syntaxset()
             )),
+            SerializedIndependentSyntaxSets::Referenced(
+                Self::get_serialized_integrated_independent_syntax_sets()
+            ),
             Self::get_integrated_themeset(),
         )
     }

@@ -18,45 +18,12 @@ pub fn cache_dir() -> Cow<'static, str> {
 }
 
 pub fn clear_assets() {
-<<<<<<< HEAD
     clear_asset("themes.bin", "theme set cache");
+    clear_asset("independent_syntax_sets_map.bin", "independent syntax sets map cache");
+    clear_asset("independent_syntax_sets.bin", "independent syntax sets cache");
     clear_asset("syntaxes.bin", "syntax set cache");
     clear_asset("metadata.yaml", "metadata file");
-||||||| constructed merge base
-    let theme_set_path = PROJECT_DIRS.cache_dir().join("themes.bin");
-    let syntax_set_path = PROJECT_DIRS.cache_dir().join("syntaxes.bin");
-    let metadata_file = PROJECT_DIRS.cache_dir().join("metadata.yaml");
-
-    print!("Clearing theme set cache ... ");
-    fs::remove_file(theme_set_path).ok();
-    println!("okay");
-
-    print!("Clearing syntax set cache ... ");
-    fs::remove_file(syntax_set_path).ok();
-    println!("okay");
-
-    print!("Clearing metadata file ... ");
-    fs::remove_file(metadata_file).ok();
-    println!("okay");
-=======
-    let theme_set_path = PROJECT_DIRS.cache_dir().join("themes.bin");
-    let syntax_set_path = PROJECT_DIRS.cache_dir().join("syntaxes.bin");
-    let lookup_path = PROJECT_DIRS.cache_dir().join("lookup.bin");
-    let independent_syntaxes_path = PROJECT_DIRS.cache_dir().join("independent_syntaxes.bin");
-    let metadata_file = PROJECT_DIRS.cache_dir().join("metadata.yaml");
-
-    print!("Clearing theme set cache ... ");
-    fs::remove_file(theme_set_path).ok();
-    println!("okay");
-
-    print!("Clearing syntax set cache ... ");
-    fs::remove_file(syntax_set_path).ok();
-    println!("okay");
-
-    print!("Clearing metadata file ... ");
-    fs::remove_file(metadata_file).ok();
-    println!("okay");
->>>>>>> Load independent syntaxes
+    
 }
 
 pub fn assets_from_cache_or_binary() -> Result<HighlightingAssets> {
