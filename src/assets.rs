@@ -185,9 +185,9 @@ impl HighlightingAssets {
         Ok(HighlightingAssets {
             full_syntax_set,
             serialized_full_syntax_set: None, // No need to serialize until we know it is needed
+            independent_syntax_sets: HashMap::new(),
+            serialized_independent_syntax_sets: SerializedIndependentSyntaxSets::Owned(data),
             independent_syntax_sets_map,
-            syntaxes: SerializedIndependentSyntaxSets::Owned(data),
-            loaded_syntax_sets: HashMap::new(),
             theme_set,
             fallback_theme: None,
         })
