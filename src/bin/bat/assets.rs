@@ -23,7 +23,6 @@ pub fn clear_assets() {
     clear_asset("independent_syntax_sets.bin", "independent syntax sets cache");
     clear_asset("syntaxes.bin", "syntax set cache");
     clear_asset("metadata.yaml", "metadata file");
-    
 }
 
 pub fn assets_from_cache_or_binary() -> Result<HighlightingAssets> {
