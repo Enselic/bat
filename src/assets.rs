@@ -228,6 +228,9 @@ impl HighlightingAssets {
         let syntax_set_bin = dump_binary(&independent_syntax_set);
         let size = syntax_set_bin.len();
 
+        // let test_from_binary = from_binary(data);
+        // eprintln!("tested and from_binary worked");
+
         // Remember where in the binary blob we can find it when we need it again
         let offset_and_size = OffsetAndSize { offset, size };
 
@@ -254,8 +257,8 @@ impl HighlightingAssets {
             "Mapped
         {:?}
         {:?}
-        to {:?} which is {:?}",
-            names, extensions, offset_and_size, &syntax_set_bin
+        to {:?} which is {:?} and data size is now {}",
+            names, extensions, offset_and_size, &syntax_set_bin, data.len()
         );
 
         // Append the binary blob with the data
@@ -510,9 +513,10 @@ impl HighlightingAssets {
             SerializedIndependentSyntaxSets::Owned(ref owned) => &owned[..],
             SerializedIndependentSyntaxSets::Referenced(referenced) => referenced,
         };
+//        let slice_of_syntax_set = &ref_to_data[offset..end];
         let slice_of_syntax_set = &ref_to_data[offset..end];
         eprintln!("Loading SyntaxSet at {:?}, from_binary gets {:?}", *offset_and_size, slice_of_syntax_set);
-        from_binary(slice_of_syntax_set)
+        Some(from_binary(slice_of_syntax_set))
     }
 
     fn get_first_line_syntax(&self, reader: &mut InputReader) -> Option<&SyntaxReference> {
