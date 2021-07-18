@@ -510,6 +510,16 @@ fn asset_from_cache<T: serde::de::DeserializeOwned>(path: &Path, description: &s
     asset_from_reader(BufReader::new(asset_file), description)
 }
 
+fn asset_data_from_cache(path: &Path, description: &str) -> Result<Vec<u8>> {
+    std::fs::read(path).chain_err(|| {
+        format!(
+            "Could not load cached {} '{}'",
+            description,
+            path.to_string_lossy()
+        )
+    })
+}
+
 fn asset_from_reader<T: serde::de::DeserializeOwned, R: std::io::BufRead>(
     input: R,
     description: &str,
