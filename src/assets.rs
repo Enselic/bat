@@ -283,7 +283,7 @@ impl HighlightingAssets {
             SerializedIndependentSyntaxSets::Referenced(
                 Self::get_serialized_integrated_independent_syntax_sets()
             ),
-
+            Self::get_serialized_integrated_independent_syntax_sets_map(),
             Self::get_integrated_themeset(),
         )
     }

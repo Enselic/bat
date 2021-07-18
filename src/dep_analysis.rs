@@ -6,7 +6,6 @@
 
 use std::collections::{
     HashSet,
-    HashMap,
 };
 use syntect::parsing::syntax_definition::{
     ContextReference,
