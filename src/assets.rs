@@ -231,8 +231,6 @@ impl HighlightingAssets {
         // Remember where in the binary blob we can find it when we need it again
         let offset_and_size = OffsetAndSize { offset, size };
 
-        // Append the binary blob with the data
-        data.extend(syntax_set_bin);
 
         let mut names = vec![];
         let mut extensions = vec![];
@@ -256,9 +254,12 @@ impl HighlightingAssets {
             "Mapped
         {:?}
         {:?}
-        to {:?}",
-            names, extensions, offset_and_size
+        to {:?} which is {:?}",
+            names, extensions, offset_and_size, &syntax_set_bin
         );
+
+        // Append the binary blob with the data
+        data.extend(syntax_set_bin);
 
         return size;
     }
@@ -503,14 +504,14 @@ impl HighlightingAssets {
         &self,
         offset_and_size: &OffsetAndSize,
     ) -> Option<SyntaxSet> {
-        eprintln!("Loading SyntaxSet at {:?}", *offset_and_size);
         let OffsetAndSize { offset, size } = *offset_and_size;
         let end = offset + size;
         let ref_to_data: &[u8] = match &self.serialized_independent_syntax_sets {
             SerializedIndependentSyntaxSets::Owned(ref owned) => &owned[..],
             SerializedIndependentSyntaxSets::Referenced(referenced) => referenced,
         };
-        let slice_of_syntax_set = &ref_to_data[offset as usize..end as usize];
+        let slice_of_syntax_set = &ref_to_data[offset..end];
+        eprintln!("Loading SyntaxSet at {:?}, from_binary gets {:?}", *offset_and_size, slice_of_syntax_set);
         from_binary(slice_of_syntax_set)
     }
 
