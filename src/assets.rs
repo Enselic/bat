@@ -154,7 +154,7 @@ impl HighlightingAssets {
             );
         }
 
-        let independserialized_ent_sy_setsaxes = super::dep_analysis::build_independent(&syntax_set_builder);
+        let independent_syntax_sets = super::dep_analysis::build_independent(&syntax_set_builder);
 
         eprintln!("");
         eprintln!("");
@@ -170,26 +170,21 @@ impl HighlightingAssets {
             lookup_by_ext: HashMap::new(),
         };
 
-        for syntax_sserialized_et in _setsdependent_syntaxes {
+        for independent_syntax_set in independent_syntax_sets {
             eprintln!("");
 
-            let size = Self::handle_independent_syntax(&mut independent_syntax_sets_map, &full_syntax_set, offset, &mut data);
+            let size = Self::handle_independent_syntax(&mut independent_syntax_sets_map, &independent_syntax_set, offset, &mut data);
 
             // Update offset for next syntax set
             offset += size;
         }
-
-        // Last, add the full fallback SyntaxSet that contains everything
-        let full_syntax_set = syntax_set_builder.build();
-        // TODO: Use None to mark "full syntax set"
-        Self::handle_independent_syntax(&mut independent_syntax_sets_map, &full_syntax_set, offset, &mut data);
 
         let full_syntax_set = LazyCell::new();
         full_syntax_set.fill(syntax_set_builder.build());
 
         Ok(HighlightingAssets {
             full_syntax_set,
-            serialized_full_syntax_set: None,
+            serialized_full_syntax_set: None, // No need to serialize until we know it is needed
             independent_syntax_sets_map,
             syntaxes: SerializedIndependentSyntaxSets::Owned(data),
             loaded_syntax_sets: HashMap::new(),
