@@ -472,31 +472,27 @@ impl HighlightingAssets {
 
     fn find_syntax_by_token(&self, token: &str) -> Option<&SyntaxReference> {
         let offset_and_size = self.find_offset_and_size_by_token(token)
-        .and_then(|offset_and_size| self.independent_syntax_sets.get(offset_and_size));
-        .and_then(|independent_syntax_set| independent_syntax_set.borrow_with(|| {
-
-        }));
-
-        });
-        let offset_and_size = ;
-        if let Some(offset_and_size) = offset_and_size {
-            let OffsetAndSize { offset, size } = *offset_and_size;
-            let end = offset + size;
-            let ref_to_data: &[u8] = match &self.serialized_independent_syntax_sets {
-                SerializedIndependentSyntaxSets::Owned(ref owned) => &owned[..],
-                SerializedIndependentSyntaxSets::Referenced(referenced) => referenced,
-            };
-            let slice_of_syntax_set = &ref_to_data[offset as usize..end as usize];
-            let independent_syntax_set = from_binary(slice_of_syntax_set);
-            let sets = (|| HashMap::new());
-            return independent_syntax_set.find_syntax_by_extension(ext);
-        }
+        .and_then(|offset_and_size| {
+            self.independent_syntax_sets.get(offset_and_size)
+            .and_then(|independent_syntax_set| independent_syntax_set.borrow_with(|| {
+                self.get_independent_syntax_set_with_offset_and_size(offset_and_size)
+            }))
+        })
         // TODO: Fallback to full_syntax_set?
-        return self.get_syntax_set().find_syntax_by_extension(ext);
     }
 
-    fn get_syntax_set_with_offset_and_size(offset_and_size: OffsetAndSize) {
-
+    fn get_independent_syntax_set_with_offset_and_size(
+        &self,
+        offset_and_size: &OffsetAndSize
+    ) -> Option<SyntaxSet> {
+        let OffsetAndSize { offset, size } = *offset_and_size;
+        let end = offset + size;
+        let ref_to_data: &[u8] = match &self.serialized_independent_syntax_sets {
+            SerializedIndependentSyntaxSets::Owned(ref owned) => &owned[..],
+            SerializedIndependentSyntaxSets::Referenced(referenced) => referenced,
+        };
+        let slice_of_syntax_set = &ref_to_data[offset as usize..end as usize];
+        from_binary(slice_of_syntax_set)
     }
 
     fn get_first_line_syntax(&self, reader: &mut InputReader) -> Option<&SyntaxReference> {
