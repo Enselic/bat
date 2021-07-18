@@ -31,12 +31,6 @@ pub struct OffsetAndSize {
 }
 
 
-#[derive(Debug, Clone, Deserialize, Serialize)]
-pub struct SyntaxesLookup {
-    pub lookup_by_name: HashMap<String, OffsetAndSize>,
-    pub lookup_by_ext: HashMap<String, OffsetAndSize>,
-}
-
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct SyntaxDefinitionWithDeps {
