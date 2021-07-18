@@ -448,8 +448,10 @@ impl HighlightingAssets {
         if let Some(offset_and_size) = offset_and_size {
             let OffsetAndSize { offset, size } = *offset_and_size;
             let end = offset + size;
-            let ref_to_data = match self.serialized_independent_syntax_sets {
-                SerializedIndependentSyntaxSets::Owned(owned) => &owned,
+            let ref_to_data: &[u8] = match &self.serialized_independent_syntax_sets {
+                SerializedIndependentSyntaxSets::Owned(ref owned) => {
+                    &owned[..]
+                }
                 SerializedIndependentSyntaxSets::Referenced(referenced) => referenced,
             };
             let slice_of_syntax_set = &ref_to_data[offset as usize..end as usize];
