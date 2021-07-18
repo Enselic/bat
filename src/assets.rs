@@ -262,8 +262,8 @@ impl HighlightingAssets {
         include_bytes!("../assets/independent_syntax_sets.bin")
     }
 
-    fn get_serialized_integrated_independent_syntax_sets_map() -> &'static [u8] {
-        include_bytes!("../assets/independent_syntax_sets_map.bin")
+    fn get_serialized_integrated_independent_syntax_sets_map() -> SerializedSyntaxSetsMap {
+        from_binary(include_bytes!("../assets/independent_syntax_sets_map.bin"))
     }
 
     fn get_integrated_syntaxset() -> SyntaxSet {
@@ -283,6 +283,7 @@ impl HighlightingAssets {
             SerializedIndependentSyntaxSets::Referenced(
                 Self::get_serialized_integrated_independent_syntax_sets()
             ),
+
             Self::get_integrated_themeset(),
         )
     }
@@ -312,16 +313,9 @@ impl HighlightingAssets {
 
     pub(crate) fn get_syntax_set(&self) -> &SyntaxSet {
         if !self.full_syntax_set.filled() {
-      full_      self.full_syntax_set.fill(self.serialized_syntax_set.as_ref().unwrap().deserialize());
+            self.full_syntax_set.fill(self.serialized_full_syntax_set.as_ref().unwrap().deserialize());
         }
         self.full_syntax_set.borrow().unwrap()
-full_        // if let SyntaxSetForm::Serialized(ref serialized_syntax_set) = *self.full_syntax_set.borrow() {
-full_        //     self.full_syntax_set.replace(SyntaxSetForm::Deserialized(serialized_syntax_set.deserialize()));
-        // }
-        // match *self.full_syntax_set.borrow() {
-        //     SyntaxSetForm::Deserialized(ref full_syntax_set) => full_syntax_set,
-        //     SyntaxSetForm::Serialized(_) => panic!("impossible, we just deserialized"),
-        // }
     }
 
     pub fn syntaxes(&self) -> &[SyntaxReference] {
