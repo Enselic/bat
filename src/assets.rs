@@ -1,10 +1,11 @@
 use std::collections::BTreeMap;
+use std::collections::HashMap;
 use std::ffi::OsStr;
 use std::fs::{self, File};
 use std::io::BufReader;
 use std::path::Path;
 
-use syntect::dumps::{dump_to_file, from_binary, from_reader};
+use syntect::dumps::{dump_binary, dump_to_file, from_binary, from_reader};
 use syntect::highlighting::{Theme, ThemeSet};
 use syntect::parsing::{SyntaxReference, SyntaxSet, SyntaxSetBuilder};
 
@@ -26,29 +27,62 @@ enum SerializedSyntaxSet {
     Referenced(&'static [u8]),
 }
 
+// Offset into a binary blob where the start of a syntax set can be found
+// Size is the size.
+#[derive(Debug, Eq, PartialEq, Clone, Copy, Deserialize, Serialize, Hash)]
+pub struct OffsetAndSize {
+    pub offset: usize,
+    pub size: usize,
+}
+
 impl SerializedSyntaxSet {
     fn deserialize(&self) -> SyntaxSet {
         match self {
-            SerializedSyntaxSet::Referenced(data) => asset_from_reader(*data, "lazy loaded syntax set").expect("data compiled to binary is not corrupt"),
+            SerializedSyntaxSet::Referenced(data) => {
+                asset_from_reader(*data, "lazy loaded syntax set")
+                    .expect("data compiled to binary is not corrupt")
+            }
             _ => panic!("not yet imlpemented"),
         }
     }
 }
 
-// #[derive(Debug)]
-// enum SyntaxSetForm {
-//     Serialized(SerializedSyntaxSet),
-//     Deserialized(SyntaxSet),
-// }
+#[derive(Debug)]
+pub enum SerializedIndependentSyntaxSets {
+    Owned(Vec<u8>),
+    Referenced(&'static [u8]),
+}
 
-/// Old comments:
-/// Serialized form of `syntax_set`. Not present if we already have a `syntax_set`
-/// Lazy-loaded from `serialized_syntax_set`
+impl SerializedIndependentSyntaxSets {
+    fn save(&self, path: &Path) -> Result<()> {
+        match self {
+            SerializedIndependentSyntaxSets::Owned(ref data) => std::fs::write(path, data),
+            SerializedIndependentSyntaxSets::Referenced(data) => std::fs::write(path, data),
+        }.chain_err(|| "failure")
+    }
+}
+
+use serde::{Deserialize, Serialize};
+#[derive(Debug, Clone, Deserialize, Serialize)]
+pub struct IndependentSyntaxSetsMap {
+    pub by_name: HashMap<String, OffsetAndSize>,
+    pub by_ext: HashMap<String, OffsetAndSize>,
+}
+
 #[derive(Debug)]
 pub struct HighlightingAssets {
-    /// Invariant: The serialized version of `syntax_set` if present
-    serialized_syntax_set: Option<SerializedSyntaxSet>,
-    syntax_set: LazyCell<SyntaxSet>,
+    /// Lazy-loaded full SyntaxSet, containing all syntaxes we know of.
+    /// Useful for things like --list-languages, etc.
+    full_syntax_set: LazyCell<SyntaxSet>,
+    /// Invariant: The serialized version of `full_syntax_set` if present
+    serialized_full_syntax_set: Option<SerializedSyntaxSet>,
+
+    /// We only want to load an independent SyntaxSet once. Here we keep
+    /// track of which ones we loaded already.
+    independent_syntax_sets: HashMap<OffsetAndSize, LazyCell<SyntaxSet>>,
+    serialized_independent_syntax_sets: SerializedIndependentSyntaxSets,
+    independent_syntax_sets_map: IndependentSyntaxSetsMap,
+
     pub(crate) theme_set: ThemeSet,
     fallback_theme: Option<&'static str>,
 }
@@ -71,6 +105,29 @@ const IGNORED_SUFFIXES: [&str; 10] = [
 ];
 
 impl HighlightingAssets {
+    fn new(
+        full_syntax_set: LazyCell<SyntaxSet>,
+        serialized_full_syntax_set: Option<SerializedSyntaxSet>,
+        serialized_independent_syntax_sets: SerializedIndependentSyntaxSets,
+        independent_syntax_sets_map: IndependentSyntaxSetsMap,
+        theme_set: ThemeSet,
+    ) -> Self {
+        // Prepare the map so we can lazily load syntaxes without a mut reference
+        let mut independent_syntax_sets = HashMap::new();
+        for value in independent_syntax_sets_map.by_ext.values() {
+            independent_syntax_sets.insert(*value, LazyCell::new());
+        }
+        HighlightingAssets {
+            full_syntax_set,
+            serialized_full_syntax_set,
+            independent_syntax_sets,
+            serialized_independent_syntax_sets,
+            independent_syntax_sets_map,
+            theme_set,
+            fallback_theme: None,
+        }
+    }
+
     pub fn default_theme() -> &'static str {
         "Monokai Extended"
     }
@@ -119,37 +176,130 @@ impl HighlightingAssets {
             );
         }
 
-        let syntax_set = LazyCell::new();
-        syntax_set.fill(syntax_set_builder.build());
-        Ok(HighlightingAssets {
-            syntax_set,
-            serialized_syntax_set: None,
+        let independent_syntax_sets = super::dep_analysis::build_independent(&syntax_set_builder);
+
+        eprintln!("");
+        eprintln!("");
+        eprintln!("");
+        eprintln!("The following independent syntax sets were built:");
+
+        let mut data: Vec<u8> = vec![];
+
+        let mut offset = 0;
+
+        let mut independent_syntax_sets_map = IndependentSyntaxSetsMap {
+            by_name: HashMap::new(),
+            by_ext: HashMap::new(),
+        };
+
+        for independent_syntax_set in independent_syntax_sets {
+            eprintln!("");
+
+            let size = Self::handle_independent_syntax(
+                &mut independent_syntax_sets_map,
+                &independent_syntax_set,
+                offset,
+                &mut data,
+            );
+
+            // Update offset for next syntax set
+            offset += size;
+        }
+
+        let full_syntax_set = LazyCell::new();
+        full_syntax_set.fill(syntax_set_builder.build()).expect("this shall never fail");
+
+        Ok(HighlightingAssets::new(
+            full_syntax_set,
+            None, // serialized_full_syntax_set
+            SerializedIndependentSyntaxSets::Owned(data),
+            independent_syntax_sets_map,
             theme_set,
-            fallback_theme: None,
-        })
+        ))
+    }
+
+    fn handle_independent_syntax(
+        lookup_table: &mut IndependentSyntaxSetsMap,
+        independent_syntax_set: &SyntaxSet,
+        offset: usize,
+        data: &mut Vec<u8>,
+    ) -> usize {
+        // bincode this syntax set
+        let syntax_set_bin = dump_binary(&independent_syntax_set);
+        let size = syntax_set_bin.len();
+
+        // let test_from_binary = from_binary(data);
+        // eprintln!("tested and from_binary worked");
+
+        // Remember where in the binary blob we can find it when we need it again
+        let offset_and_size = OffsetAndSize { offset, size };
+
+
+        let mut names = vec![];
+        let mut extensions = vec![];
+
+        // Map all file extensions to the offset and size that we just stored
+        for syntax in independent_syntax_set.syntaxes() {
+            names.push(syntax.name.clone());
+
+            lookup_table
+                .by_name
+                .insert(syntax.name.clone(), offset_and_size);
+
+            for ext in &syntax.file_extensions {
+                extensions.push(ext.clone());
+
+                lookup_table.by_ext.insert(ext.to_string(), offset_and_size);
+            }
+        }
+
+        eprintln!(
+            "Mapped
+        {:?}
+        {:?}
+        to {:?} which is {:?} and data size is now {}",
+            names, extensions, offset_and_size, &syntax_set_bin, data.len()
+        );
+
+        // Append the binary blob with the data
+        data.extend(syntax_set_bin);
+
+        return size;
     }
 
     pub fn from_cache(cache_path: &Path) -> Result<Self> {
-        let syntax_set = LazyCell::new();
-        syntax_set.fill(asset_from_cache(
-            &cache_path.join("syntaxes.bin"),
-            "syntax set",
-        )?);
-        Ok(HighlightingAssets {
-            // TODO: Load in serialized form
-            syntax_set,
-            serialized_syntax_set: None,
-            theme_set: asset_from_cache(&cache_path.join("themes.bin"), "theme set")?,
-            fallback_theme: None,
-        })
+        Ok(HighlightingAssets::new(
+            LazyCell::new(), // full_syntax_set
+            Some(SerializedSyntaxSet::Owned(asset_data_from_cache(
+                &cache_path.join("syntaxes.bin"),
+                "syntax set",
+            )?)),
+            SerializedIndependentSyntaxSets::Owned(asset_data_from_cache(
+                &cache_path.join("independent_syntax_sets.bin"),
+                "independent syntax sets",
+            )?),
+            asset_from_cache(
+                &cache_path.join("independent_syntax_sets_map.bin"),
+                "independent syntax sets map",
+            )?,
+            asset_from_cache(&cache_path.join("themes.bin"), "theme set")?,
+        ))
     }
 
     fn get_serialized_integrated_syntaxset() -> &'static [u8] {
         include_bytes!("../assets/syntaxes.bin")
     }
 
+    fn get_serialized_integrated_independent_syntax_sets() -> &'static [u8] {
+        include_bytes!("../assets/independent_syntax_sets.bin")
+    }
+
+    fn get_serialized_integrated_independent_syntax_sets_map() -> IndependentSyntaxSetsMap {
+        from_binary(include_bytes!("../assets/independent_syntax_sets_map.bin"))
+    }
+
     fn get_integrated_syntaxset() -> SyntaxSet {
-        from_binary(get_serialized_integrated_syntaxset())
+        from_binary(Self::get_serialized_integrated_syntaxset())
     }
 
     fn get_integrated_themeset() -> ThemeSet {
@@ -157,15 +307,17 @@ impl HighlightingAssets {
     }
 
     pub fn from_binary() -> Self {
-        let serialized_syntax_set = Some(SerializedSyntaxSet::Referenced(Self::get_serialized_integrated_syntaxset()));
-        let theme_set = Self::get_integrated_themeset();
-
-        HighlightingAssets {
-            syntax_set: LazyCell::new(),
-            serialized_syntax_set,
-            theme_set,
-            fallback_theme: None,
-        }
+        HighlightingAssets::new(
+            LazyCell::new(), // full_syntax_set
+            Some(SerializedSyntaxSet::Referenced(
+                Self::get_serialized_integrated_syntaxset(),
+            )),
+            SerializedIndependentSyntaxSets::Referenced(
+                Self::get_serialized_integrated_independent_syntax_sets(),
+            ),
+            Self::get_serialized_integrated_independent_syntax_sets_map(),
+            Self::get_integrated_themeset(),
+        )
     }
 
     pub fn save_to_cache(&self, target_dir: &Path, current_version: &str) -> Result<()> {
@@ -176,6 +328,12 @@ impl HighlightingAssets {
             &target_dir.join("syntaxes.bin"),
             "syntax set",
         )?;
+        asset_to_cache(
+            &self.independent_syntax_sets_map,
+            &target_dir.join("independent_syntax_sets_map.bin"),
+            "independent syntax sets map",
+        )?;
+        self.serialized_independent_syntax_sets.save(&target_dir.join("independent_syntax_sets.bin"))?;
 
         print!(
             "Writing metadata to folder {} ... ",
@@ -192,17 +350,12 @@ impl HighlightingAssets {
     }
 
     pub(crate) fn get_syntax_set(&self) -> &SyntaxSet {
-        if !self.syntax_set.filled() {
-            self.syntax_set.fill(self.serialized_syntax_set.as_ref().unwrap().deserialize());
-        }
-        self.syntax_set.borrow().unwrap()
-        // if let SyntaxSetForm::Serialized(ref serialized_syntax_set) = *self.syntax_set.borrow() {
-        //     self.syntax_set.replace(SyntaxSetForm::Deserialized(serialized_syntax_set.deserialize()));
-        // }
-        // match *self.syntax_set.borrow() {
-        //     SyntaxSetForm::Deserialized(ref syntax_set) => syntax_set,
-        //     SyntaxSetForm::Serialized(_) => panic!("impossible, we just deserialized"),
-        // }
+        self.full_syntax_set.borrow_with(|| {
+            self.serialized_full_syntax_set
+                .as_ref()
+                .expect("serialized syntax set must be present if deserialized form is not")
+                .deserialize()
+        })
     }
 
     pub fn syntaxes(&self) -> &[SyntaxReference] {
@@ -251,8 +404,7 @@ impl HighlightingAssets {
         mapping: &SyntaxMapping,
     ) -> Result<&SyntaxReference> {
         if let Some(language) = language {
-            self.get_syntax_set()
-                .find_syntax_by_token(language)
+            self.find_syntax_by_token(language)
                 .ok_or_else(|| ErrorKind::UnknownSyntax(language.to_owned()).into())
         } else {
             let line_syntax = self.get_first_line_syntax(&mut input.reader);
@@ -330,6 +482,63 @@ impl HighlightingAssets {
             })
     }
 
+    fn find_offset_and_size_by_token(&self, s: &str) -> Option<&OffsetAndSize> {
+        self.independent_syntax_sets_map.by_ext.get(s).or_else(|| {
+            self.independent_syntax_sets_map
+                .by_name
+                .get(&s.to_ascii_lowercase())
+        })
+    }
+
+    fn find_syntax_by_token(&self, token: &str) -> Option<&SyntaxReference> {
+        self.find_offset_and_size_by_token(token)
+            .and_then(|offset_and_size| {
+                self.independent_syntax_sets.get(offset_and_size)
+                .and_then(|syntax_set_cell| {
+                    let independent_syntax_set = syntax_set_cell.borrow_with(|| {
+                        self.get_independent_syntax_set_with_offset_and_size(offset_and_size).expect("data not corrupt")
+                    });
+                    // for ss in independent_syntax_set.syntaxes() {
+                    //     eprintln!("{}", ss.name);
+                    // }
+                    let result = independent_syntax_set.find_syntax_by_token(token);
+                    // eprintln!("token={}, {:?}", token, result);
+                    result
+                })
+            })
+        // TODO: Fallback to full_syntax_set?
+    }
+
+    pub(crate) fn find_syntax_set_by_token(&self, token: Option<&str>) -> Option<&SyntaxSet> {
+        if token.is_none() {
+            return None;
+        }
+        self.find_offset_and_size_by_token(token.unwrap())
+            .and_then(|offset_and_size| {
+                self.independent_syntax_sets.get(offset_and_size)
+                .and_then(|syntax_set_cell| {
+                    Some(syntax_set_cell.borrow_with(|| {
+                        self.get_independent_syntax_set_with_offset_and_size(offset_and_size).unwrap()
+                    }))
+                })
+            })
+    }
+
+    fn get_independent_syntax_set_with_offset_and_size(
+        &self,
+        offset_and_size: &OffsetAndSize,
+    ) -> Option<SyntaxSet> {
+        let OffsetAndSize { offset, size } = *offset_and_size;
+        let end = offset + size;
+        let ref_to_data: &[u8] = match &self.serialized_independent_syntax_sets {
+            SerializedIndependentSyntaxSets::Owned(ref owned) => &owned[..],
+            SerializedIndependentSyntaxSets::Referenced(referenced) => referenced,
+        };
+        let slice_of_syntax_set = &ref_to_data[offset..end];
+        //eprintln!("Loading SyntaxSet at {:?}, from_binary gets {:?}", *offset_and_size, slice_of_syntax_set);
+        Some(from_binary(slice_of_syntax_set))
+    }
+
     fn get_first_line_syntax(&self, reader: &mut InputReader) -> Option<&SyntaxReference> {
         String::from_utf8(reader.first_line.clone())
             .ok()
@@ -359,6 +568,16 @@ fn asset_from_cache<T: serde::de::DeserializeOwned>(path: &Path, description: &s
         )
     })?;
     asset_from_reader(BufReader::new(asset_file), description)
+}
+
+fn asset_data_from_cache(path: &Path, description: &str) -> Result<Vec<u8>> {
+    std::fs::read(path).chain_err(|| {
+        format!(
+            "Could not load cached {} '{}'",
+            description,
+            path.to_string_lossy()
+        )
+    })
 }
 
 fn asset_from_reader<T: serde::de::DeserializeOwned, R: std::io::BufRead>(

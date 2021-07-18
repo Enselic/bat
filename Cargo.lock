@@ -1110,8 +1110,7 @@ dependencies = [
 [[package]]
 name = "syntect"
 version = "4.5.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2bfac2b23b4d049dc9a89353b4e06bbc85a8f42020cccbe5409a115cf19031e5"
+source = "git+https://github.com/trishume/syntect.git?branch=master#6bcec62afa5a15b349cda7a5ba67d2eab51115f3"
 dependencies = [
  "bincode",
  "bitflags",
