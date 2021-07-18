@@ -465,22 +465,20 @@ impl HighlightingAssets {
             })
     }
 
-    fn find_offset_and_size_by_token(&self, token: &str) -> OffsetAndSize {
-        {
-            let ext_res = self.find_syntax_by_extension(s);
-            if ext_res.is_some() {
-                return ext_res;
-            }
-        }
-        self.syntaxes.iter().rev().find(|&syntax| syntax.name.eq_ignore_ascii_case(s))
+    fn find_offset_and_size_by_token(&self, s: &str) -> Option<&OffsetAndSize> {
+        self.independent_syntax_sets_map.by_ext.get(s)
+        .or_else(|| self.independent_syntax_sets_map.by_name.get(&s.to_ascii_lowercase()))
     }
 
     fn find_syntax_by_token(&self, token: &str) -> Option<&SyntaxReference> {
-        let offset_and_size = self.find_offset_and_size_by_token(token);
-        self.independent_syntax_sets.get(offset_and_size).unwrap().borrow_with(|| {
+        let offset_and_size = self.find_offset_and_size_by_token(token)
+        .and_then(|offset_and_size| self.independent_syntax_sets.get(offset_and_size));
+        .and_then(|independent_syntax_set| independent_syntax_set.borrow_with(|| {
+
+        }));
 
         });
-        let offset_and_size = self.independent_syntax_sets_map.by_ext.get(ext);
+        let offset_and_size = ;
         if let Some(offset_and_size) = offset_and_size {
             let OffsetAndSize { offset, size } = *offset_and_size;
             let end = offset + size;
@@ -493,9 +491,12 @@ impl HighlightingAssets {
             let sets = (|| HashMap::new());
             return independent_syntax_set.find_syntax_by_extension(ext);
         }
-        // TODO: Make single return point and deduplicate
-        // TODO: Use full if missing from independent
+        // TODO: Fallback to full_syntax_set?
         return self.get_syntax_set().find_syntax_by_extension(ext);
+    }
+
+    fn get_syntax_set_with_offset_and_size(offset_and_size: OffsetAndSize) {
+
     }
 
     fn get_first_line_syntax(&self, reader: &mut InputReader) -> Option<&SyntaxReference> {

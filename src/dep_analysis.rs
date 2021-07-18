@@ -125,7 +125,9 @@ pub fn build_independent(syntax_set_builder: &SyntaxSetBuilder) -> Vec<SyntaxSet
         // We definitely need ourselves...
         let mut added_names = HashSet::new();
         builder.add(syn_def_and_deps.syntax_definition.clone());
-        added_names.insert(syn_def_and_deps.syntax_definition.name);
+        // We store in ascii lowercase so we can simulate SyntaxSet::find_syntax_by_token() more
+        // easily, which does a case insensitive comparisions with names
+        added_names.insert(syn_def_and_deps.syntax_definition.name.to_ascii_lowercase());
 
 
         let mut deps_left = syn_def_and_deps.deps.clone();
