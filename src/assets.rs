@@ -466,13 +466,13 @@ impl HighlightingAssets {
         if let Some(offset_and_size) = offset_and_size {
             let OffsetAndSize { offset, size } = *offset_and_size;
             let end = offset + size;
-            let ref_to_data = match self.syntaxes {
+            let ref_to_data = match self.serialized_independent_syntax_sets {
                 SerializedIndependentSyntaxSets::Owned(owned) => &owned,
                 SerializedIndependentSyntaxSets::Referenced(referenced) => referenced,
             };
             let slice_of_syntax_set = &ref_to_data[offset as usize..end as usize];
             let full_syntax_set = from_binary(slice_of_syntax_set);
-            self.loaded_syntax_sets.insert(*offset_and_size, full_syntax_set);
+            self.independent_syntax_sets.insert(*offset_and_size, full_syntax_set);
             return full_syntax_set.find_syntax_by_extension(ext);
         }
         // TODO: Make single return point and deduplicate
