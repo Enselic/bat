@@ -91,16 +91,16 @@ impl HighlightingAssets {
     fn new(
         full_syntax_set: LazyCell<SyntaxSet>,
         serialized_full_syntax_set: Option<SerializedSyntaxSet>,
-        syntaxes: SerializedIndependentSyntaxSets,
-        lookup: IndependentSyntaxSetsMap,
+        serialized_independent_syntax_sets: SerializedIndependentSyntaxSets,
+        independent_syntax_sets_map: IndependentSyntaxSetsMap,
         theme_set: ThemeSet,
     ) -> Self {
         HighlightingAssets {
-            serialized_full_syntax_set,
             full_syntax_set,
-            lookup,
-            syntaxes,
-            loaded_syntax_sets: HashMap::new(),
+            serialized_full_syntax_set,
+            independent_syntax_sets: HashMap::new(),
+            serialized_independent_syntax_sets,
+            independent_syntax_sets_map,
             theme_set,
             fallback_theme: None,
         }
@@ -165,7 +165,7 @@ impl HighlightingAssets {
 
         let mut offset = 0;
 
-        let mut lookup = IndependentSyntaxSetsMap {
+        let mut independent_syntax_sets_map = IndependentSyntaxSetsMap {
             lookup_by_name: HashMap::new(),
             lookup_by_ext: HashMap::new(),
         };
@@ -173,7 +173,7 @@ impl HighlightingAssets {
         for syntax_sserialized_et in _setsdependent_syntaxes {
             eprintln!("");
 
-            let size = Self::handle_independent_syntax(&mut lookup, &full_syntax_set, offset, &mut data);
+            let size = Self::handle_independent_syntax(&mut independent_syntax_sets_map, &full_syntax_set, offset, &mut data);
 
             // Update offset for next syntax set
             offset += size;
@@ -182,7 +182,7 @@ impl HighlightingAssets {
         // Last, add the full fallback SyntaxSet that contains everything
         let full_syntax_set = syntax_set_builder.build();
         // TODO: Use None to mark "full syntax set"
-        Self::handle_independent_syntax(&mut lookup, &full_syntax_set, offset, &mut data);
+        Self::handle_independent_syntax(&mut independent_syntax_sets_map, &full_syntax_set, offset, &mut data);
 
         let full_syntax_set = LazyCell::new();
         full_syntax_set.fill(syntax_set_builder.build());
@@ -190,7 +190,7 @@ impl HighlightingAssets {
         Ok(HighlightingAssets {
             full_syntax_set,
             serialized_full_syntax_set: None,
-            lookup,
+            independent_syntax_sets_map,
             syntaxes: SerializedIndependentSyntaxSets::Owned(data),
             loaded_syntax_sets: HashMap::new(),
             theme_set,
@@ -257,7 +257,7 @@ impl HighlightingAssets {
             // TODO: Load in serialized form
             full_syntax_set,
             None,
-            asset_from_cache(&cache_path.join("lookup.bin"), "theme set")?
+            asset_from_cache(&cache_path.join("independent_syntax_sets_map.bin"), "theme set")?
             asset_from_cache(&cache_path.join("themes.bin"), "theme set")?,
         ))
     }
@@ -347,7 +347,7 @@ full_        //     self.full_syntax_set.replace(SyntaxSetForm::Deserialized(ser
     }
 
     pub fn find_syntax_by_name(&self, name: &str) -> Option<&SyntaxReference> {
-        let offset_and_size = self.lookup.lookup_by_name.get(name);
+        let offset_and_size = self.independent_syntax_sets_map.lookup_by_name.get(name);
         if let Some(offset_and_size) = offset_and_size {
             let OffsetAndSize { offset, size } = *offset_and_size;
             let end = offset + size;
@@ -467,7 +467,7 @@ full_        //     self.full_syntax_set.replace(SyntaxSetForm::Deserialized(ser
     }
 
     fn find_syntax_by_extension(&self, ext: &str) -> Option<&SyntaxReference> {
-        let offset_and_size = self.lookup.lookup_by_ext.get(ext);
+        let offset_and_size = self.independent_syntax_sets_map.lookup_by_ext.get(ext);
         if let Some(offset_and_size) = offset_and_size {
             let OffsetAndSize { offset, size } = *offset_and_size;
             let end = offset + size;
