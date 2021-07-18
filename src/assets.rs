@@ -193,15 +193,14 @@ impl HighlightingAssets {
         })
     }
 
-    // TODO: Better name on IndependentSyntaxSetsMap
     fn handle_independent_syntax(
         lookup_table: &mut IndependentSyntaxSetsMap,
-        full_syntax_set: &SyntaxSet,
+        independent_syntax_set: &SyntaxSet,
         offset: u64,
         data: &mut Vec<u8>,
     ) -> u64 {
         // bincode this syntax set
-        let syntax_set_bin = dump_binary(&full_syntax_set);
+        let syntax_set_bin = dump_binary(&independent_syntax_set);
         let size = syntax_set_bin.len() as u64;
 
         // Remember where in the binary blob we can find it when we need it again
@@ -214,7 +213,7 @@ impl HighlightingAssets {
         let mut extensions = vec![];
 
         // Map all file extensions to the offset and size that we just stored
-        for syntax in full_syntax_set.syntaxes() {
+        for syntax in independent_syntax_set.syntaxes() {
             names.push(syntax.name.clone());
 
             lookup_table
