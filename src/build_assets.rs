@@ -37,17 +37,20 @@ pub fn build_assets(
 
     let syntax_set_builder = build_syntax_set_builder(source_dir, include_integrated_assets)?;
 
-    if std::env::var("BAT_PRINT_SYNTAX_DEPENDENCIES").is_ok() {
-        // To trigger this code, run:
-        // BAT_PRINT_SYNTAX_DEPENDENCIES=1 cargo run -- cache --build --source assets --blank --target /tmp
-        print_syntax_dependencies(&syntax_set_builder);
-    }
+    let serialized_independent_syntax_sets =
+        build_serialized_independent_syntax_sets(&syntax_set_builder, include_integrated_assets)?;
 
     let syntax_set = syntax_set_builder.build();
 
     print_unlinked_contexts(&syntax_set);
 
-    write_assets(&theme_set, &syntax_set, target_dir, current_version)
+    write_assets(
+        &theme_set,
+        &syntax_set,
+        &serialized_independent_syntax_sets,
+        target_dir,
+        current_version,
+    )
 }
 
 fn build_theme_set(source_dir: &Path, include_integrated_assets: bool) -> ThemeSet {
@@ -116,6 +119,7 @@ fn print_unlinked_contexts(syntax_set: &SyntaxSet) {
 fn write_assets(
     theme_set: &ThemeSet,
     syntax_set: &SyntaxSet,
+    serialized_independent_syntax_sets: &SerializedIndependentSyntaxSets,
     target_dir: &Path,
     current_version: &str,
 ) -> Result<()> {
@@ -132,6 +136,12 @@ fn write_assets(
         "syntax set",
         COMPRESS_SYNTAXES,
     )?;
+    asset_to_cache(
+        serialized_independent_syntax_sets,
+        &target_dir.join("independent_syntax_sets.bin"),
+        "independent syntax sets",
+        COMPRESS_SERIALIAZED_INDEPENDENT_SYNTAX_SETS,
+    )?;
 
     print!(
         "Writing metadata to folder {} ... ",
@@ -143,21 +153,63 @@ fn write_assets(
     Ok(())
 }
 
-/// Generates independent [SyntaxSet]s after analyzing dependencies between syntaxes
-/// in a [SyntaxSetBuilder], and then prints the reults.
-fn print_syntax_dependencies(syntax_set_builder: &SyntaxSetBuilder) {
-    println!("Constructing independent SyntaxSets...");
-    let independent_syntax_sets = build_independent_syntax_sets(syntax_set_builder);
+fn print_syntax_set_names(syntax_set: &SyntaxSet) {
+    let names = syntax_set
+        .syntaxes()
+        .iter()
+        .map(|syntax| &syntax.name)
+        .collect::<Vec<_>>();
+    println!("{:?}", names);
+}
 
-    println!("Independent SyntaxSets:");
-    for syntax_set in independent_syntax_sets {
-        let names = syntax_set
-            .syntaxes()
-            .iter()
-            .map(|syntax| &syntax.name)
-            .collect::<Vec<_>>();
-        println!("{:?}", names);
+fn build_serialized_independent_syntax_sets(
+    syntax_set_builder: &'_ SyntaxSetBuilder,
+    include_integrated_assets: bool,
+) -> Result<SerializedIndependentSyntaxSets> {
+    let mut serialized_independent_syntax_sets = SerializedIndependentSyntaxSets {
+        by_name: HashMap::new(),
+        serialized_syntax_sets: vec![],
+    };
+
+    if include_integrated_assets {
+        // Dependency info has been lost, so we can't calculate independent sets
+        // so return early without any data filled in
+        return Ok(serialized_independent_syntax_sets);
     }
+
+    let independent_syntax_sets_to_serialize = build_independent_syntax_sets(&syntax_set_builder)
+        // For now, only store syntax sets with one syntax, otherwise
+        // the binary grows by several megs
+        .filter(|syntax_set| syntax_set.syntaxes().len() == 1);
+
+    for independent_syntax_set in independent_syntax_sets_to_serialize {
+        // Remember what index it is found at
+        let current_index = serialized_independent_syntax_sets
+            .serialized_syntax_sets
+            .len();
+
+        for syntax in independent_syntax_set.syntaxes() {
+            serialized_independent_syntax_sets
+                .by_name
+                .insert(syntax.name.to_ascii_lowercase().clone(), current_index);
+        }
+
+        let serialized_syntax_set = asset_to_contents(
+            &independent_syntax_set,
+            &format!(
+                "failed to serialize independent syntax set {}",
+                current_index
+            ),
+            COMPRESS_INDEPENDENT_SYNTAX_SETS,
+        )?;
+
+        // Add last (to make index above correct)
+        serialized_independent_syntax_sets
+            .serialized_syntax_sets
+            .push(serialized_syntax_set);
+    }
+
+    Ok(serialized_independent_syntax_sets)
 }
 
 /// Analyzes dependencies between syntaxes in a [SyntaxSetBuilder].
@@ -178,7 +230,15 @@ fn build_independent_syntax_sets(
 
         let mut builder = SyntaxSetDependencyBuilder::new();
         builder.add_with_dependencies(syntax, &syntax_to_dependencies, &dependency_to_syntax);
-        Some(builder.build())
+        let syntax_set = builder.build();
+
+        if std::env::var("BAT_PRINT_SYNTAX_DEPENDENCIES").is_ok() {
+            // To trigger this code, run:
+            // BAT_PRINT_SYNTAX_DEPENDENCIES=1 cargo run -- cache --build --source assets --blank --target /tmp
+            print_syntax_set_names(&syntax_set);
+        }
+
+        Some(syntax_set)
     })
 }
 

@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use std::ffi::OsStr;
 use std::fs;
 use std::path::{Path, PathBuf};
@@ -18,6 +19,13 @@ use crate::syntax_mapping::{MappingTarget, SyntaxMapping};
 pub struct HighlightingAssets {
     syntax_set_cell: LazyCell<SyntaxSet>,
     serialized_syntax_set: SerializedSyntaxSet,
+
+    /// Lazily load independent [SyntaxSet]s. The index in this vec matches
+    /// the index in `serialized_independent_syntax_sets.serialized_syntax_sets`
+    independent_syntax_sets: Vec<LazyCell<SyntaxSet>>,
+
+    serialized_independent_syntax_sets: SerializedIndependentSyntaxSets,
+
     theme_set: ThemeSet,
     fallback_theme: Option<&'static str>,
 }
@@ -33,6 +41,14 @@ pub(crate) const COMPRESS_SYNTAXES: bool = true;
 
 // Compress for size of ~20 kB instead of ~200 kB at the cost of ~30% longer deserialization time
 pub(crate) const COMPRESS_THEMES: bool = true;
+
+// Compress for size of ~400 kB instead of ~2100 kB at the cost of ~30% longer deserialization time
+pub(crate) const COMPRESS_INDEPENDENT_SYNTAX_SETS: bool = true;
+
+// Don't compress, because the lookup data structures are tiny, and
+// the contained serialized syntax sets are already compressed, and
+// decompressing has a significant performance impact
+pub(crate) const COMPRESS_SERIALIAZED_INDEPENDENT_SYNTAX_SETS: bool = false;
 
 const IGNORED_SUFFIXES: [&str; 13] = [
     // Editor etc backups
@@ -55,10 +71,24 @@ const IGNORED_SUFFIXES: [&str; 13] = [
 ];
 
 impl HighlightingAssets {
-    fn new(serialized_syntax_set: SerializedSyntaxSet, theme_set: ThemeSet) -> Self {
+    fn new(
+        serialized_syntax_set: SerializedSyntaxSet,
+        serialized_independent_syntax_sets: SerializedIndependentSyntaxSets,
+        theme_set: ThemeSet,
+    ) -> Self {
+        // Prepare so we can lazily load independent syntaxes sets without a mut reference
+        let independent_syntax_sets = vec![
+            LazyCell::new();
+            serialized_independent_syntax_sets
+                .serialized_syntax_sets
+                .len()
+        ];
+
         HighlightingAssets {
             syntax_set_cell: LazyCell::new(),
             serialized_syntax_set,
+            independent_syntax_sets,
+            serialized_independent_syntax_sets,
             theme_set,
             fallback_theme: None,
         }
@@ -71,6 +101,11 @@ impl HighlightingAssets {
     pub fn from_cache(cache_path: &Path) -> Result<Self> {
         Ok(HighlightingAssets::new(
             SerializedSyntaxSet::FromFile(cache_path.join("syntaxes.bin")),
+            asset_from_cache(
+                &cache_path.join("independent_syntax_sets.bin"),
+                "independent syntax sets",
+                COMPRESS_SERIALIAZED_INDEPENDENT_SYNTAX_SETS,
+            )?,
             asset_from_cache(&cache_path.join("themes.bin"), "theme set", COMPRESS_THEMES)?,
         ))
     }
@@ -78,6 +113,7 @@ impl HighlightingAssets {
     pub fn from_binary() -> Self {
         HighlightingAssets::new(
             SerializedSyntaxSet::FromBinary(get_serialized_integrated_syntaxset()),
+            get_integrated_independent_syntax_sets(),
             get_integrated_themeset(),
         )
     }
@@ -109,6 +145,41 @@ impl HighlightingAssets {
 
     pub fn themes(&self) -> impl Iterator<Item = &str> {
         self.get_theme_set().themes.keys().map(|s| s.as_ref())
+    }
+
+    /// Finds a [SyntaxSet] that contains a [SyntaxReference] by its name.
+    /// First tries to find an independent [SyntaxSet].
+    /// If none is found, returns the [SyntaxSet] that contains all syntaxes.
+    fn get_syntax_set_by_name(&self, name: &str) -> Result<&SyntaxSet> {
+        let independent_syntax_set = self
+            .serialized_independent_syntax_sets
+            .by_name
+            .get(&name.to_ascii_lowercase())
+            .and_then(|index| self.get_independent_syntax_set_with_index(*index));
+
+        match independent_syntax_set {
+            Some(ref syntax_set) => Ok(syntax_set),
+            None => self.get_syntax_set(),
+        }
+    }
+
+    fn load_independent_syntax_set_with_index(&self, index: usize) -> Result<SyntaxSet> {
+        let serialized_syntax_set = &self
+            .serialized_independent_syntax_sets
+            .serialized_syntax_sets[index];
+        asset_from_contents(
+            &serialized_syntax_set[..],
+            "n/a",
+            COMPRESS_INDEPENDENT_SYNTAX_SETS,
+        )
+        .map_err(|_| format!("Could not parse independent syntax set at {}", index).into())
+    }
+
+    fn get_independent_syntax_set_with_index(&self, index: usize) -> Option<&SyntaxSet> {
+        self.independent_syntax_sets.get(index).and_then(|cell| {
+            cell.try_borrow_with(|| self.load_independent_syntax_set_with_index(index))
+                .ok()
+        })
     }
 
     /// Use [Self::get_syntax_for_file_name] instead
@@ -167,7 +238,7 @@ impl HighlightingAssets {
         mapping: &SyntaxMapping,
     ) -> Result<SyntaxReferenceInSet> {
         if let Some(language) = language {
-            let syntax_set = self.get_syntax_set()?;
+            let syntax_set = self.get_syntax_set_by_name(language)?;
             syntax_set
                 .find_syntax_by_token(language)
                 .map(|syntax| SyntaxReferenceInSet { syntax, syntax_set })
@@ -312,8 +383,25 @@ impl SerializedSyntaxSet {
     }
 }
 
+#[derive(Debug, Clone, serde::Deserialize, serde::Serialize)]
+pub(crate) struct SerializedIndependentSyntaxSets {
+    /// Lookup the index into `serialized_syntax_sets` of a [SyntaxSet] by the
+    /// name of any [SyntaxReference] inside the [SyntaxSet]
+    /// (We will later add `by_extension`, `by_first_line`, etc.)
+    pub(crate) by_name: HashMap<String, usize>,
+
+    pub(crate) serialized_syntax_sets: Vec<Vec<u8>>,
+}
+
 pub(crate) fn get_serialized_integrated_syntaxset() -> &'static [u8] {
     include_bytes!("../assets/syntaxes.bin")
+}
+
+fn get_integrated_independent_syntax_sets() -> SerializedIndependentSyntaxSets {
+    from_binary(
+        include_bytes!("../assets/independent_syntax_sets.bin"),
+        COMPRESS_SERIALIAZED_INDEPENDENT_SYNTAX_SETS,
+    )
 }
 
 pub(crate) fn get_integrated_themeset() -> ThemeSet {
