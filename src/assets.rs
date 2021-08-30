@@ -61,10 +61,16 @@ impl HighlightingAssets {
     }
 
     pub fn from_cache(cache_path: &Path) -> Result<Self> {
-        Ok(HighlightingAssets::new(
+        #[allow(unused_variables)]
+        let res = Ok(HighlightingAssets::new(
             SerializedSyntaxSet::FromFile(cache_path.join("syntaxes.bin")),
             asset_from_cache(&cache_path.join("themes.bin"), "theme set")?,
-        ))
+        ));
+
+        panic!("does this code run in CI?");
+
+        #[allow(unreachable_code)]
+        res
     }
 
     pub fn from_binary() -> Self {
