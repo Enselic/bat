@@ -21,10 +21,10 @@ pub struct HighlightingAssets {
     serialized_syntax_set: SerializedSyntaxSet,
 
     /// Lazily load independent [SyntaxSet]s. The index in this vec matches
-    /// the index in `serialized_independent_syntax_sets.serialized_syntax_sets`
-    independent_syntax_sets: Vec<LazyCell<SyntaxSet>>,
+    /// the index in `minimal_syntax_sets_lookup.serialized_syntax_sets`
+    minimal_syntax_sets: Vec<LazyCell<SyntaxSet>>,
 
-    serialized_independent_syntax_sets: SerializedIndependentSyntaxSets,
+    minimal_syntax_sets_lookup: MinimalSyntaxSetsLookup,
 
     theme_set: ThemeSet,
     fallback_theme: Option<&'static str>,
@@ -43,12 +43,12 @@ pub(crate) const COMPRESS_SYNTAXES: bool = true;
 pub(crate) const COMPRESS_THEMES: bool = true;
 
 // Compress for size of ~400 kB instead of ~2100 kB at the cost of ~30% longer deserialization time
-pub(crate) const COMPRESS_INDEPENDENT_SYNTAX_SETS: bool = true;
+pub(crate) const COMPRESS_MINIMAL_SYNTAX_SETS: bool = true;
 
 // Don't compress, because the lookup data structures are tiny, and
 // the contained serialized syntax sets are already compressed, and
 // decompressing has a significant performance impact
-pub(crate) const COMPRESS_SERIALIAZED_INDEPENDENT_SYNTAX_SETS: bool = false;
+pub(crate) const COMPRESS_MINIMAL_SYNTAX_SETS_LOOKUP: bool = false;
 
 const IGNORED_SUFFIXES: [&str; 13] = [
     // Editor etc backups
@@ -73,13 +73,13 @@ const IGNORED_SUFFIXES: [&str; 13] = [
 impl HighlightingAssets {
     fn new(
         serialized_syntax_set: SerializedSyntaxSet,
-        serialized_independent_syntax_sets: SerializedIndependentSyntaxSets,
+        minimal_syntax_sets_lookup: MinimalSyntaxSetsLookup,
         theme_set: ThemeSet,
     ) -> Self {
         // Prepare so we can lazily load independent syntaxes sets without a mut reference
-        let independent_syntax_sets = vec![
+        let minimal_syntax_sets = vec![
             LazyCell::new();
-            serialized_independent_syntax_sets
+            minimal_syntax_sets_lookup
                 .serialized_syntax_sets
                 .len()
         ];
@@ -87,8 +87,8 @@ impl HighlightingAssets {
         HighlightingAssets {
             syntax_set_cell: LazyCell::new(),
             serialized_syntax_set,
-            independent_syntax_sets,
-            serialized_independent_syntax_sets,
+            minimal_syntax_sets,
+            minimal_syntax_sets_lookup,
             theme_set,
             fallback_theme: None,
         }
@@ -102,9 +102,9 @@ impl HighlightingAssets {
         Ok(HighlightingAssets::new(
             SerializedSyntaxSet::FromFile(cache_path.join("syntaxes.bin")),
             asset_from_cache(
-                &cache_path.join("independent_syntax_sets.bin"),
+                &cache_path.join("minimal_syntax_sets.bin"),
                 "independent syntax sets",
-                COMPRESS_SERIALIAZED_INDEPENDENT_SYNTAX_SETS,
+                COMPRESS_MINIMAL_SYNTAX_SETS_LOOKUP,
             )?,
             asset_from_cache(&cache_path.join("themes.bin"), "theme set", COMPRESS_THEMES)?,
         ))
@@ -113,7 +113,7 @@ impl HighlightingAssets {
     pub fn from_binary() -> Self {
         HighlightingAssets::new(
             SerializedSyntaxSet::FromBinary(get_serialized_integrated_syntaxset()),
-            get_integrated_independent_syntax_sets(),
+            get_integrated_minimal_syntax_sets(),
             get_integrated_themeset(),
         )
     }
@@ -152,7 +152,7 @@ impl HighlightingAssets {
     /// If none is found, returns the [SyntaxSet] that contains all syntaxes.
     fn get_syntax_set_by_name(&self, name: &str) -> Result<&SyntaxSet> {
         let independent_syntax_set = self
-            .serialized_independent_syntax_sets
+            .minimal_syntax_sets_lookup
             .by_name
             .get(&name.to_ascii_lowercase())
             .and_then(|index| self.get_independent_syntax_set_with_index(*index));
@@ -165,18 +165,18 @@ impl HighlightingAssets {
 
     fn load_independent_syntax_set_with_index(&self, index: usize) -> Result<SyntaxSet> {
         let serialized_syntax_set = &self
-            .serialized_independent_syntax_sets
+            .minimal_syntax_sets_lookup
             .serialized_syntax_sets[index];
         asset_from_contents(
             &serialized_syntax_set[..],
             "n/a",
-            COMPRESS_INDEPENDENT_SYNTAX_SETS,
+            COMPRESS_MINIMAL_SYNTAX_SETS,
         )
         .map_err(|_| format!("Could not parse independent syntax set at {}", index).into())
     }
 
     fn get_independent_syntax_set_with_index(&self, index: usize) -> Option<&SyntaxSet> {
-        self.independent_syntax_sets.get(index).and_then(|cell| {
+        self.minimal_syntax_sets.get(index).and_then(|cell| {
             cell.try_borrow_with(|| self.load_independent_syntax_set_with_index(index))
                 .ok()
         })
@@ -384,7 +384,7 @@ impl SerializedSyntaxSet {
 }
 
 #[derive(Debug, Clone, serde::Deserialize, serde::Serialize)]
-pub(crate) struct SerializedIndependentSyntaxSets {
+pub(crate) struct MinimalSyntaxSetsLookup {
     /// Lookup the index into `serialized_syntax_sets` of a [SyntaxSet] by the
     /// name of any [SyntaxReference] inside the [SyntaxSet]
     /// (We will later add `by_extension`, `by_first_line`, etc.)
@@ -397,10 +397,10 @@ pub(crate) fn get_serialized_integrated_syntaxset() -> &'static [u8] {
     include_bytes!("../assets/syntaxes.bin")
 }
 
-fn get_integrated_independent_syntax_sets() -> SerializedIndependentSyntaxSets {
+fn get_integrated_minimal_syntax_sets() -> MinimalSyntaxSetsLookup {
     from_binary(
-        include_bytes!("../assets/independent_syntax_sets.bin"),
-        COMPRESS_SERIALIAZED_INDEPENDENT_SYNTAX_SETS,
+        include_bytes!("../assets/minimal_syntax_sets.bin"),
+        COMPRESS_MINIMAL_SYNTAX_SETS_LOOKUP,
     )
 }
 

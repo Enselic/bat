@@ -20,7 +20,7 @@ pub fn cache_dir() -> Cow<'static, str> {
 pub fn clear_assets() {
     clear_asset("themes.bin", "theme set cache");
     clear_asset(
-        "independent_syntax_sets.bin",
+        "minimal_syntax_sets.bin",
         "independent syntax sets cache",
     );
     clear_asset("syntaxes.bin", "syntax set cache");

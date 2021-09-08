@@ -37,8 +37,8 @@ pub fn build_assets(
 
     let syntax_set_builder = build_syntax_set_builder(source_dir, include_integrated_assets)?;
 
-    let serialized_independent_syntax_sets =
-        build_serialized_independent_syntax_sets(&syntax_set_builder, include_integrated_assets)?;
+    let minimal_syntax_sets_lookup =
+        build_minimal_syntax_sets_lookup(&syntax_set_builder, include_integrated_assets)?;
 
     let syntax_set = syntax_set_builder.build();
 
@@ -47,7 +47,7 @@ pub fn build_assets(
     write_assets(
         &theme_set,
         &syntax_set,
-        &serialized_independent_syntax_sets,
+        &minimal_syntax_sets_lookup,
         target_dir,
         current_version,
     )
@@ -119,7 +119,7 @@ fn print_unlinked_contexts(syntax_set: &SyntaxSet) {
 fn write_assets(
     theme_set: &ThemeSet,
     syntax_set: &SyntaxSet,
-    serialized_independent_syntax_sets: &SerializedIndependentSyntaxSets,
+    minimal_syntax_sets_lookup: &MinimalSyntaxSetsLookup,
     target_dir: &Path,
     current_version: &str,
 ) -> Result<()> {
@@ -137,10 +137,10 @@ fn write_assets(
         COMPRESS_SYNTAXES,
     )?;
     asset_to_cache(
-        serialized_independent_syntax_sets,
-        &target_dir.join("independent_syntax_sets.bin"),
+        minimal_syntax_sets_lookup,
+        &target_dir.join("minimal_syntax_sets.bin"),
         "independent syntax sets",
-        COMPRESS_SERIALIAZED_INDEPENDENT_SYNTAX_SETS,
+        COMPRESS_MINIMAL_SYNTAX_SETS_LOOKUP,
     )?;
 
     print!(
@@ -162,11 +162,11 @@ fn print_syntax_set_names(syntax_set: &SyntaxSet) {
     println!("{:?}", names);
 }
 
-fn build_serialized_independent_syntax_sets(
+fn build_minimal_syntax_sets_lookup(
     syntax_set_builder: &'_ SyntaxSetBuilder,
     include_integrated_assets: bool,
-) -> Result<SerializedIndependentSyntaxSets> {
-    let mut serialized_independent_syntax_sets = SerializedIndependentSyntaxSets {
+) -> Result<MinimalSyntaxSetsLookup> {
+    let mut minimal_syntax_sets_lookup = MinimalSyntaxSetsLookup {
         by_name: HashMap::new(),
         serialized_syntax_sets: vec![],
     };
@@ -174,22 +174,22 @@ fn build_serialized_independent_syntax_sets(
     if include_integrated_assets {
         // Dependency info has been lost, so we can't calculate independent sets
         // so return early without any data filled in
-        return Ok(serialized_independent_syntax_sets);
+        return Ok(minimal_syntax_sets_lookup);
     }
 
-    let independent_syntax_sets_to_serialize = build_independent_syntax_sets(&syntax_set_builder)
+    let minimal_syntax_sets_to_serialize = build_minimal_syntax_sets(&syntax_set_builder)
         // For now, only store syntax sets with one syntax, otherwise
         // the binary grows by several megs
         .filter(|syntax_set| syntax_set.syntaxes().len() == 1);
 
-    for independent_syntax_set in independent_syntax_sets_to_serialize {
+    for independent_syntax_set in minimal_syntax_sets_to_serialize {
         // Remember what index it is found at
-        let current_index = serialized_independent_syntax_sets
+        let current_index = minimal_syntax_sets_lookup
             .serialized_syntax_sets
             .len();
 
         for syntax in independent_syntax_set.syntaxes() {
-            serialized_independent_syntax_sets
+            minimal_syntax_sets_lookup
                 .by_name
                 .insert(syntax.name.to_ascii_lowercase().clone(), current_index);
         }
@@ -200,21 +200,21 @@ fn build_serialized_independent_syntax_sets(
                 "failed to serialize independent syntax set {}",
                 current_index
             ),
-            COMPRESS_INDEPENDENT_SYNTAX_SETS,
+            COMPRESS_MINIMAL_SYNTAX_SETS,
         )?;
 
         // Add last (to make index above correct)
-        serialized_independent_syntax_sets
+        minimal_syntax_sets_lookup
             .serialized_syntax_sets
             .push(serialized_syntax_set);
     }
 
-    Ok(serialized_independent_syntax_sets)
+    Ok(minimal_syntax_sets_lookup)
 }
 
 /// Analyzes dependencies between syntaxes in a [SyntaxSetBuilder].
 /// From that, it builds independent [SyntaxSet]s.
-fn build_independent_syntax_sets(
+fn build_minimal_syntax_sets(
     syntax_set_builder: &'_ SyntaxSetBuilder,
 ) -> impl Iterator<Item = SyntaxSet> + '_ {
     let syntaxes = syntax_set_builder.syntaxes();
