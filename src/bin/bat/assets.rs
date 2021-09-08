@@ -21,7 +21,7 @@ pub fn clear_assets() {
     clear_asset("themes.bin", "theme set cache");
     clear_asset(
         "minimal_syntaxes.bin",
-        "independent syntax sets cache",
+        "minimal syntax sets cache",
     );
     clear_asset("syntaxes.bin", "syntax set cache");
     clear_asset("metadata.yaml", "metadata file");

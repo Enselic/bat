@@ -139,8 +139,8 @@ fn write_assets(
     asset_to_cache(
         minimal_syntaxes,
         &target_dir.join("minimal_syntaxes.bin"),
-        "independent syntax sets",
-        COMPRESS_MINIMAL_SYNTAXES_LOOKUP,
+        "minimal syntax sets",
+        COMPRESS_MINIMAL_SYNTAXES,
     )?;
 
     print!(
@@ -172,7 +172,7 @@ fn build_minimal_syntax_sets_lookup(
     };
 
     if include_integrated_assets {
-        // Dependency info has been lost, so we can't calculate independent sets
+        // Dependency info has been lost, so we can't calculate minimal sets
         // so return early without any data filled in
         return Ok(minimal_syntaxes);
     }
@@ -182,25 +182,25 @@ fn build_minimal_syntax_sets_lookup(
         // the binary grows by several megs
         .filter(|syntax_set| syntax_set.syntaxes().len() == 1);
 
-    for independent_syntax_set in minimal_syntax_sets_to_serialize {
+    for minimal_syntax_set in minimal_syntax_sets_to_serialize {
         // Remember what index it is found at
         let current_index = minimal_syntaxes
             .serialized_syntax_sets
             .len();
 
-        for syntax in independent_syntax_set.syntaxes() {
+        for syntax in minimal_syntax_set.syntaxes() {
             minimal_syntaxes
                 .by_name
                 .insert(syntax.name.to_ascii_lowercase().clone(), current_index);
         }
 
         let serialized_syntax_set = asset_to_contents(
-            &independent_syntax_set,
+            &minimal_syntax_set,
             &format!(
-                "failed to serialize independent syntax set {}",
+                "failed to serialize minimal syntax set {}",
                 current_index
             ),
-            COMPRESS_MINIMAL_SYNTAXES,
+            COMPRESS_SERIALIZED_MINIMAL_SYNTAXES,
         )?;
 
         // Add last (to make index above correct)
@@ -213,7 +213,7 @@ fn build_minimal_syntax_sets_lookup(
 }
 
 /// Analyzes dependencies between syntaxes in a [SyntaxSetBuilder].
-/// From that, it builds independent [SyntaxSet]s.
+/// From that, it builds minimal [SyntaxSet]s.
 fn build_minimal_syntax_sets(
     syntax_set_builder: &'_ SyntaxSetBuilder,
 ) -> impl Iterator<Item = SyntaxSet> + '_ {
@@ -222,7 +222,7 @@ fn build_minimal_syntax_sets(
     // Build the data structures we need for dependency resolution
     let (syntax_to_dependencies, dependency_to_syntax) = generate_maps(syntaxes);
 
-    // Create one independent SyntaxSet from each (non-hidden) SyntaxDefinition
+    // Create one minimal SyntaxSet from each (non-hidden) SyntaxDefinition
     syntaxes.iter().filter_map(move |syntax| {
         if syntax.hidden {
             return None;
