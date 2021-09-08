@@ -37,7 +37,7 @@ pub fn build_assets(
 
     let syntax_set_builder = build_syntax_set_builder(source_dir, include_integrated_assets)?;
 
-    let minimal_syntax_sets_lookup =
+    let minimal_syntaxes =
         build_minimal_syntax_sets_lookup(&syntax_set_builder, include_integrated_assets)?;
 
     let syntax_set = syntax_set_builder.build();
@@ -47,7 +47,7 @@ pub fn build_assets(
     write_assets(
         &theme_set,
         &syntax_set,
-        &minimal_syntax_sets_lookup,
+        &minimal_syntaxes,
         target_dir,
         current_version,
     )
@@ -119,7 +119,7 @@ fn print_unlinked_contexts(syntax_set: &SyntaxSet) {
 fn write_assets(
     theme_set: &ThemeSet,
     syntax_set: &SyntaxSet,
-    minimal_syntax_sets_lookup: &MinimalSyntaxSetsLookup,
+    minimal_syntaxes: &MinimalSyntaxes,
     target_dir: &Path,
     current_version: &str,
 ) -> Result<()> {
@@ -137,10 +137,10 @@ fn write_assets(
         COMPRESS_SYNTAXES,
     )?;
     asset_to_cache(
-        minimal_syntax_sets_lookup,
-        &target_dir.join("minimal_syntax_sets.bin"),
+        minimal_syntaxes,
+        &target_dir.join("minimal_syntaxes.bin"),
         "independent syntax sets",
-        COMPRESS_MINIMAL_SYNTAX_SETS_LOOKUP,
+        COMPRESS_MINIMAL_SYNTAXES_LOOKUP,
     )?;
 
     print!(
@@ -165,8 +165,8 @@ fn print_syntax_set_names(syntax_set: &SyntaxSet) {
 fn build_minimal_syntax_sets_lookup(
     syntax_set_builder: &'_ SyntaxSetBuilder,
     include_integrated_assets: bool,
-) -> Result<MinimalSyntaxSetsLookup> {
-    let mut minimal_syntax_sets_lookup = MinimalSyntaxSetsLookup {
+) -> Result<MinimalSyntaxes> {
+    let mut minimal_syntaxes = MinimalSyntaxes {
         by_name: HashMap::new(),
         serialized_syntax_sets: vec![],
     };
@@ -174,7 +174,7 @@ fn build_minimal_syntax_sets_lookup(
     if include_integrated_assets {
         // Dependency info has been lost, so we can't calculate independent sets
         // so return early without any data filled in
-        return Ok(minimal_syntax_sets_lookup);
+        return Ok(minimal_syntaxes);
     }
 
     let minimal_syntax_sets_to_serialize = build_minimal_syntax_sets(&syntax_set_builder)
@@ -184,12 +184,12 @@ fn build_minimal_syntax_sets_lookup(
 
     for independent_syntax_set in minimal_syntax_sets_to_serialize {
         // Remember what index it is found at
-        let current_index = minimal_syntax_sets_lookup
+        let current_index = minimal_syntaxes
             .serialized_syntax_sets
             .len();
 
         for syntax in independent_syntax_set.syntaxes() {
-            minimal_syntax_sets_lookup
+            minimal_syntaxes
                 .by_name
                 .insert(syntax.name.to_ascii_lowercase().clone(), current_index);
         }
@@ -200,16 +200,16 @@ fn build_minimal_syntax_sets_lookup(
                 "failed to serialize independent syntax set {}",
                 current_index
             ),
-            COMPRESS_MINIMAL_SYNTAX_SETS,
+            COMPRESS_MINIMAL_SYNTAXES,
         )?;
 
         // Add last (to make index above correct)
-        minimal_syntax_sets_lookup
+        minimal_syntaxes
             .serialized_syntax_sets
             .push(serialized_syntax_set);
     }
 
-    Ok(minimal_syntax_sets_lookup)
+    Ok(minimal_syntaxes)
 }
 
 /// Analyzes dependencies between syntaxes in a [SyntaxSetBuilder].
