@@ -6,7 +6,7 @@ use std::path::{Path, PathBuf};
 use lazycell::LazyCell;
 
 use syntect::highlighting::{Theme, ThemeSet};
-use syntect::parsing::{SyntaxReference, SyntaxSet};
+use syntect::parsing::{Scope, SyntaxReference, SyntaxSet};
 
 use path_abs::PathAbs;
 
@@ -45,8 +45,16 @@ pub struct SyntaxReferenceInSet<'a> {
 pub(crate) struct MinimalSyntaxes {
     /// Lookup the index into `serialized_syntax_sets` of a [SyntaxSet] by the
     /// name of any [SyntaxReference] inside the [SyntaxSet]
-    /// (We will later add `by_extension`, `by_first_line`, etc.)
     pub(crate) by_name: HashMap<String, usize>,
+
+    /// Same as [Self.by_name] but by file extension
+    pub(crate) by_file_extension: HashMap<String, usize>,
+
+    /// Same as [Self.by_name] but by scope
+    pub(crate) by_scope: HashMap<Scope, usize>,
+
+    /// Same as [Self.by_name] but by first line match
+    pub(crate) by_first_line_match: HashMap<String, usize>,
 
     /// Serialized [SyntaxSet]s. Whether or not this data is compressed is
     /// decided by [COMPRESS_SERIALIZED_MINIMAL_SYNTAXES]
