@@ -175,20 +175,23 @@ impl HighlightingAssets {
     /// tries to find a minimal [SyntaxSet]. If none is found, returns the
     /// [SyntaxSet] that contains all syntaxes.
     fn get_syntax_set_by_name(&self, name: &str) -> Result<&SyntaxSet> {
-        let minimal_syntax_set = self
+        let index = self
             .minimal_syntaxes
             .by_name
-            .get(&name.to_ascii_lowercase())
-            .and_then(|index| self.get_minimal_syntax_set_with_index(*index));
+            .get(&name.to_ascii_lowercase());
 
-        match minimal_syntax_set {
-            Some(syntax_set) => Ok(syntax_set),
+        match index {
+            Some(index) => self.get_minimal_syntax_set_with_index(*index),
             None => self.get_syntax_set(),
         }
     }
 
     fn load_minimal_syntax_set_with_index(&self, index: usize) -> Result<SyntaxSet> {
-        let serialized_syntax_set = &self.minimal_syntaxes.serialized_syntax_sets[index];
+        let serialized_syntax_set = &self
+            .minimal_syntaxes
+            .serialized_syntax_sets
+            .get(index)
+            .ok_or(format!("index out of bounds"))?;
         asset_from_contents(
             &serialized_syntax_set[..],
             &format!("minimal syntax set {}", index),
@@ -197,13 +200,11 @@ impl HighlightingAssets {
         .map_err(|_| format!("Could not parse minimal syntax set {}", index).into())
     }
 
-    fn get_minimal_syntax_set_with_index(&self, index: usize) -> Option<&SyntaxSet> {
+    fn get_minimal_syntax_set_with_index(&self, index: usize) -> Result<&SyntaxSet> {
         self.deserialized_minimal_syntaxes
             .get(index)
-            .and_then(|cell| {
-                cell.try_borrow_with(|| self.load_minimal_syntax_set_with_index(index))
-                    .ok()
-            })
+            .ok_or(format!("index out of bounds"))?
+            .try_borrow_with(|| self.load_minimal_syntax_set_with_index(index))
     }
 
     /// Use [Self::get_syntax_for_file_name] instead
