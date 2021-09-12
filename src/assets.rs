@@ -175,14 +175,22 @@ impl HighlightingAssets {
     /// tries to find a minimal [SyntaxSet]. If none is found, returns the
     /// [SyntaxSet] that contains all syntaxes.
     fn get_syntax_set_by_name(&self, name: &str) -> Result<&SyntaxSet> {
+        let minimal = self.get_minimal_syntax_set_by_name(name)?;
+        match minimal {
+            Some(minimal) => Ok(minimal),
+            None => self.get_syntax_set(),
+        }
+    }
+
+    fn get_minimal_syntax_set_by_name(&self, name: &str) -> Result<Option<&SyntaxSet>> {
         let index = self
             .minimal_syntaxes
             .by_name
             .get(&name.to_ascii_lowercase());
 
         match index {
-            Some(index) => self.get_minimal_syntax_set_with_index(*index),
-            None => self.get_syntax_set(),
+            Some(index) => Some(self.get_minimal_syntax_set_with_index(*index)).transpose(),
+            None => Ok(None),
         }
     }
 
@@ -296,13 +304,7 @@ impl HighlightingAssets {
                 Some(MappingTarget::MapToUnknown) => line_syntax
                     .ok_or_else(|| Error::UndetectedSyntax(path.to_string_lossy().into())),
 
-                Some(MappingTarget::MapTo(syntax_name)) => {
-                    let syntax_set = self.get_syntax_set()?;
-                    syntax_set
-                        .find_syntax_by_name(syntax_name)
-                        .map(|syntax| SyntaxReferenceInSet { syntax, syntax_set })
-                        .ok_or_else(|| Error::UnknownSyntax(syntax_name.to_owned()))
-                }
+                Some(MappingTarget::MapTo(syntax_name)) => self.find_syntax_by_name(syntax_name),
 
                 None => {
                     let file_name = path.file_name().unwrap_or_default();
@@ -316,6 +318,32 @@ impl HighlightingAssets {
             line_syntax.ok_or_else(|| Error::UndetectedSyntax("[unknown]".into()))
         }
     }
+
+    fn find_syntax_by_name(&self, syntax_name: &str) -> Result<SyntaxReferenceInSet> {
+        let syntax_set = self.get_syntax_set()?;
+        syntax_set
+            .find_syntax_by_name(syntax_name)
+            .map(|syntax| SyntaxReferenceInSet { syntax, syntax_set })
+            .ok_or_else(|| Error::UnknownSyntax(syntax_name.to_owned()))
+    }
+
+    fn find_minimal_syntax_by_name(&self, syntax_name: &str) -> Result<SyntaxReferenceInSet> {
+        self.minimal_syntaxes.by_name
+    }
+
+    /*
+            pub fn find_syntax_by_scope(&self, scope: Scope) -> Option<&SyntaxReference> {
+            self.syntaxes.iter().rev().find(|&s| s.scope == scope)
+        }
+
+        pub fn find_syntax_by_name<'a>(&'a self, name: &str) -> Option<&'a SyntaxReference> {
+            self.syntaxes.iter().rev().find(|&s| name == s.name)
+        }
+
+        pub fn find_syntax_by_extension<'a>(&'a self, extension: &str) -> Option<&'a SyntaxReference> {
+            self.syntaxes.iter().rev().find(|&s| s.file_extensions.iter().any(|e| e == extension))
+        }
+    */
 
     fn get_extension_syntax(&self, file_name: &OsStr) -> Result<Option<SyntaxReferenceInSet>> {
         let mut syntax = self.find_syntax_by_file_name(file_name)?;
