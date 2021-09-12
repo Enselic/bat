@@ -345,20 +345,6 @@ impl HighlightingAssets {
             .ok_or_else(|| Error::UnknownSyntax(syntax_name.to_owned()))
     }
 
-    /*
-            pub fn find_syntax_by_scope(&self, scope: Scope) -> Option<&SyntaxReference> {
-            self.syntaxes.iter().rev().find(|&s| s.scope == scope)
-        }
-
-        pub fn find_syntax_by_name<'a>(&'a self, name: &str) -> Option<&'a SyntaxReference> {
-            self.syntaxes.iter().rev().find(|&s| name == s.name)
-        }
-
-        pub fn find_syntax_by_extension<'a>(&'a self, extension: &str) -> Option<&'a SyntaxReference> {
-            self.syntaxes.iter().rev().find(|&s| s.file_extensions.iter().any(|e| e == extension))
-        }
-    */
-
     fn get_extension_syntax(&self, file_name: &OsStr) -> Result<Option<SyntaxReferenceInSet>> {
         let mut syntax = self.find_syntax_by_file_name(file_name)?;
         if syntax.is_none() {
@@ -396,7 +382,7 @@ impl HighlightingAssets {
             .unwrap_or_default();
 
         let syntax_set =
-            if let Some(syntax_set) = self.get_minimal_syntax_set_by_extension(file_name_str)? {
+            if let Some(syntax_set) = self.get_minimal_syntax_set_by_extension(file_path_str)? {
                 syntax_set
             } else {
                 self.get_syntax_set()?
