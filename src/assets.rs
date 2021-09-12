@@ -6,7 +6,7 @@ use std::path::{Path, PathBuf};
 use lazycell::LazyCell;
 
 use syntect::highlighting::{Theme, ThemeSet};
-use syntect::parsing::{Scope, SyntaxReference, SyntaxSet};
+use syntect::parsing::{Regex, Scope, SyntaxReference, SyntaxSet};
 
 use path_abs::PathAbs;
 
@@ -373,11 +373,41 @@ impl HighlightingAssets {
         &self,
         reader: &mut InputReader,
     ) -> Result<Option<SyntaxReferenceInSet>> {
+        let l = String::from_utf8(reader.first_line.clone()).map_err(|e| format!("{}", e))?;
+        let s = &l;
+
+        for (index, first_line_matches) in
+            self.minimal_syntaxes.by_first_line_match.iter().enumerate()
+        {
+            for first_line_match in first_line_matches {
+                // TODO: cache?
+                let regex = Regex::new(first_line_match.into());
+                if regex.search(s, 0, s.len(), None) {
+                    let syntax_set = self.get_minimal_syntax_set_with_index(index);
+                    let a = Ok(syntax_set
+                        .find_syntax_by_first_line(s)
+                        .map(|syntax| SyntaxReferenceInSet { syntax, syntax_set }));
+                    a.asdf;
+                    return Err("foo");
+                }
+            }
+        }
+
         let syntax_set = self.get_syntax_set()?;
-        Ok(String::from_utf8(reader.first_line.clone())
-            .ok()
-            .and_then(|l| syntax_set.find_syntax_by_first_line(&l))
+        Ok(syntax_set
+            .find_syntax_by_first_line(&l)
             .map(|syntax| SyntaxReferenceInSet { syntax, syntax_set }))
+
+        /*
+            }
+        }
+        for (i, syntax) in syntaxes[self.cached_until..].iter().enumerate() {
+            if let Some(ref reg_str) = syntax.first_line_match {
+                if let Ok(reg) = Regex::new(reg_str) {
+                    self.regexes.push((reg, i));
+                }
+            }
+        }*/
     }
 }
 
