@@ -375,18 +375,17 @@ impl HighlightingAssets {
     }
 
     fn find_syntax_by_file_name(&self, file_name: &OsStr) -> Result<Option<SyntaxReferenceInSet>> {
+        let file_name_str = file_name.to_str().unwrap_or_default();
+
         let syntax_set =
-            if let Some(syntax_set) = self.get_minimal_syntax_set_by_name(syntax_name)? {
+            if let Some(syntax_set) = self.get_minimal_syntax_set_by_extension(file_name_str)? {
                 syntax_set
             } else {
                 self.get_syntax_set()?
             };
 
-
-
-        let syntax_set = self.get_syntax_set()?;
         Ok(syntax_set
-            .find_syntax_by_extension(file_name.to_str().unwrap_or_default())
+            .find_syntax_by_extension(file_name_str)
             .map(|syntax| SyntaxReferenceInSet { syntax, syntax_set }))
     }
 
