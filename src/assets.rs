@@ -384,12 +384,10 @@ impl HighlightingAssets {
                 // TODO: cache?
                 let regex = Regex::new(first_line_match.into());
                 if regex.search(s, 0, s.len(), None) {
-                    let syntax_set = self.get_minimal_syntax_set_with_index(index);
-                    let a = Ok(syntax_set
+                    let syntax_set = self.get_minimal_syntax_set_with_index(index)?;
+                    return Ok(syntax_set
                         .find_syntax_by_first_line(s)
                         .map(|syntax| SyntaxReferenceInSet { syntax, syntax_set }));
-                    a.asdf;
-                    return Err("foo");
                 }
             }
         }
@@ -398,17 +396,6 @@ impl HighlightingAssets {
         Ok(syntax_set
             .find_syntax_by_first_line(&l)
             .map(|syntax| SyntaxReferenceInSet { syntax, syntax_set }))
-
-        /*
-            }
-        }
-        for (i, syntax) in syntaxes[self.cached_until..].iter().enumerate() {
-            if let Some(ref reg_str) = syntax.first_line_match {
-                if let Ok(reg) = Regex::new(reg_str) {
-                    self.regexes.push((reg, i));
-                }
-            }
-        }*/
     }
 }
 
