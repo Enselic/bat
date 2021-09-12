@@ -53,8 +53,8 @@ pub(crate) struct MinimalSyntaxes {
     /// Same as [Self.by_name] but by scope
     pub(crate) by_scope: HashMap<Scope, usize>,
 
-    /// Same as [Self.by_name] but by first line match
-    pub(crate) by_first_line_match: HashMap<String, usize>,
+    /// TODO
+    pub(crate) by_first_line_match: Vec<Vec<String>>,
 
     /// Serialized [SyntaxSet]s. Whether or not this data is compressed is
     /// decided by [COMPRESS_SERIALIZED_MINIMAL_SYNTAXES]
