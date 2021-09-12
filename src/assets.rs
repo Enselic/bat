@@ -345,10 +345,6 @@ impl HighlightingAssets {
             .ok_or_else(|| Error::UnknownSyntax(syntax_name.to_owned()))
     }
 
-    fn find_minimal_syntax_by_name(&self, syntax_name: &str) -> Result<SyntaxReferenceInSet> {
-        self.minimal_syntaxes.by_name
-    }
-
     /*
             pub fn find_syntax_by_scope(&self, scope: Scope) -> Option<&SyntaxReference> {
             self.syntaxes.iter().rev().find(|&s| s.scope == scope)
@@ -394,14 +390,20 @@ impl HighlightingAssets {
         file_name: &OsStr,
     ) -> Result<Option<SyntaxReferenceInSet>> {
         let file_path = Path::new(file_name);
-        let syntax_set = self.get_syntax_set()?;
+        let file_path_str = file_path
+            .extension()
+            .and_then(|x| x.to_str())
+            .unwrap_or_default();
+
+        let syntax_set =
+            if let Some(syntax_set) = self.get_minimal_syntax_set_by_extension(file_name_str)? {
+                syntax_set
+            } else {
+                self.get_syntax_set()?
+            };
+
         Ok(syntax_set
-            .find_syntax_by_extension(
-                file_path
-                    .extension()
-                    .and_then(|x| x.to_str())
-                    .unwrap_or_default(),
-            )
+            .find_syntax_by_extension(file_path_str)
             .map(|syntax| SyntaxReferenceInSet { syntax, syntax_set }))
     }
 
