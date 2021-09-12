@@ -194,6 +194,18 @@ impl HighlightingAssets {
         }
     }
 
+    fn get_minimal_syntax_set_by_extension(&self, name: &str) -> Result<Option<&SyntaxSet>> {
+        let index = self
+            .minimal_syntaxes
+            .by_file_extension
+            .get(&name.to_ascii_lowercase());
+
+        match index {
+            Some(index) => Some(self.get_minimal_syntax_set_with_index(*index)).transpose(),
+            None => Ok(None),
+        }
+    }
+
     fn load_minimal_syntax_set_with_index(&self, index: usize) -> Result<SyntaxSet> {
         let serialized_syntax_set = &self
             .minimal_syntaxes
@@ -320,7 +332,13 @@ impl HighlightingAssets {
     }
 
     fn find_syntax_by_name(&self, syntax_name: &str) -> Result<SyntaxReferenceInSet> {
-        let syntax_set = self.get_syntax_set()?;
+        let syntax_set =
+            if let Some(syntax_set) = self.get_minimal_syntax_set_by_name(syntax_name)? {
+                syntax_set
+            } else {
+                self.get_syntax_set()?
+            };
+
         syntax_set
             .find_syntax_by_name(syntax_name)
             .map(|syntax| SyntaxReferenceInSet { syntax, syntax_set })
@@ -357,6 +375,15 @@ impl HighlightingAssets {
     }
 
     fn find_syntax_by_file_name(&self, file_name: &OsStr) -> Result<Option<SyntaxReferenceInSet>> {
+        let syntax_set =
+            if let Some(syntax_set) = self.get_minimal_syntax_set_by_name(syntax_name)? {
+                syntax_set
+            } else {
+                self.get_syntax_set()?
+            };
+
+
+
         let syntax_set = self.get_syntax_set()?;
         Ok(syntax_set
             .find_syntax_by_extension(file_name.to_str().unwrap_or_default())
