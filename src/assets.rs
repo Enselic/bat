@@ -130,16 +130,6 @@ impl HighlightingAssets {
         self.get_theme_set().themes.keys().map(|s| s.as_ref())
     }
 
-    /// Finds a [SyntaxSet] that contains a [SyntaxReference] by its name. First
-    /// tries to find a minimal [SyntaxSet]. If none is found, returns the
-    /// [SyntaxSet] that contains all syntaxes.
-    fn get_syntax_set_by_name(&self, name: &str) -> Result<&SyntaxSet> {
-        match self.minimal_assets.get_syntax_set_by_name(name) {
-            Some(syntax_set) => Ok(syntax_set),
-            None => self.get_syntax_set(),
-        }
-    }
-
     /// Use [Self::get_syntax_for_file_name] instead
     #[deprecated]
     pub fn syntax_for_file_name(
@@ -191,10 +181,8 @@ impl HighlightingAssets {
         mapping: &SyntaxMapping,
     ) -> Result<SyntaxReferenceInSet> {
         if let Some(language) = language {
-            let syntax_set = self.get_syntax_set_by_name(language)?;
-            return syntax_set
-                .find_syntax_by_token(language)
-                .map(|syntax| SyntaxReferenceInSet { syntax, syntax_set })
+            return self
+                .find_syntax_by_token(language)?
                 .ok_or_else(|| Error::UnknownSyntax(language.to_owned()));
         }
 
@@ -247,8 +235,23 @@ impl HighlightingAssets {
         }
     }
 
+    fn find_syntax_by_token(&self, language: &str) -> Result<Option<SyntaxReferenceInSet>> {
+        let syntax_set = match self.minimal_assets.get_syntax_set_by_token(language)? {
+            Some(syntax_set) => syntax_set,
+            None => self.get_syntax_set()?,
+        };
+
+        Ok(syntax_set
+            .find_syntax_by_token(language)
+            .map(|syntax| SyntaxReferenceInSet { syntax, syntax_set }))
+    }
+
     fn find_syntax_by_name(&self, syntax_name: &str) -> Result<Option<SyntaxReferenceInSet>> {
-        let syntax_set = self.get_syntax_set()?;
+        let syntax_set = match self.minimal_assets.get_syntax_set_by_name(syntax_name)? {
+            Some(syntax_set) => syntax_set,
+            None => self.get_syntax_set()?,
+        };
+
         Ok(syntax_set
             .find_syntax_by_name(syntax_name)
             .map(|syntax| SyntaxReferenceInSet { syntax, syntax_set }))
@@ -262,6 +265,10 @@ impl HighlightingAssets {
     }
 
     fn get_extension_syntax(&self, file_name: &OsStr) -> Result<Option<SyntaxReferenceInSet>> {
+        if let Some(syntax) = self.minimal_assets.get_extension_syntax(file_name)? {
+            return Ok(Some(syntax));
+        }
+
         let mut syntax = self.find_syntax_by_extension(file_name.to_str().unwrap_or_default())?;
         if syntax.is_none() {
             syntax = self.find_syntax_by_extension(
@@ -308,7 +315,7 @@ fn get_integrated_minimal_syntaxes() -> MinimalSyntaxes {
 
 pub(crate) fn from_binary<T: serde::de::DeserializeOwned>(v: &[u8], compressed: bool) -> T {
     asset_from_contents(v, "n/a", compressed)
-        .expect("data integrated in binary is never faulty, but make sure `compressed` is in sync!")
+        .expect("data integrated in binary is never faulty, but make sure `compressed` is in sync! or maybe you changed data structures?")
 }
 
 fn asset_from_contents<T: serde::de::DeserializeOwned>(
