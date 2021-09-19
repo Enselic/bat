@@ -169,6 +169,8 @@ fn build_minimal_syntaxes(
 ) -> Result<MinimalSyntaxes> {
     let mut minimal_syntaxes = MinimalSyntaxes {
         by_name: HashMap::new(),
+        by_file_extension: HashMap::new(),
+        by_first_line_match: vec![],
         serialized_syntax_sets: vec![],
     };
 
@@ -186,10 +188,22 @@ fn build_minimal_syntaxes(
         // Remember what index it is found at
         let current_index = minimal_syntaxes.serialized_syntax_sets.len();
 
+        let mut first_line_matches = vec![];
+
         for syntax in minimal_syntax_set.syntaxes() {
             minimal_syntaxes
                 .by_name
                 .insert(syntax.name.to_ascii_lowercase().clone(), current_index);
+
+            for extension in &syntax.file_extensions {
+                minimal_syntaxes
+                    .by_file_extension
+                    .insert(extension.to_ascii_lowercase().clone(), current_index);
+            }
+
+            if let Some(first_line_match) = &syntax.first_line_match {
+                first_line_matches.push(first_line_match.clone());
+            }
         }
 
         let serialized_syntax_set = asset_to_contents(
@@ -198,7 +212,10 @@ fn build_minimal_syntaxes(
             COMPRESS_SERIALIZED_MINIMAL_SYNTAXES,
         )?;
 
-        // Add last so that it ends up at `current_index`
+        // Push to the end so these ends up at `current_index`
+        minimal_syntaxes
+            .by_first_line_match
+            .push(first_line_matches);
         minimal_syntaxes
             .serialized_syntax_sets
             .push(serialized_syntax_set);
