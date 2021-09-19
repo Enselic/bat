@@ -187,8 +187,7 @@ impl HighlightingAssets {
         if let Some(language) = language {
             return self
                 .minimal_assets
-                .find_syntax_by_token(language)
-                .map(|syntax| SyntaxReferenceInSet { syntax, syntax_set })
+                .find_syntax_by_token(language)?
                 .ok_or_else(|| Error::UnknownSyntax(language.to_owned()));
         }
 
@@ -229,6 +228,8 @@ impl HighlightingAssets {
             Err(Error::UndetectedSyntax("[unknown]".into()))
         };
 
+        path_syntax
+        /*
         match path_syntax {
             // If a path wasn't provided, or if path based syntax detection
             // above failed, we fall back to first-line syntax detection.
@@ -238,6 +239,7 @@ impl HighlightingAssets {
                 .ok_or(Error::UndetectedSyntax(path)),
             _ => path_syntax,
         }
+        */
     }
 }
 
