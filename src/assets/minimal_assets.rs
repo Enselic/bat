@@ -63,6 +63,12 @@ impl MinimalAssets {
             .and_then(|index| self.get_syntax_set_with_index(*index))
     }
 
+    fn find_syntax_by_token(&self, language: &str) -> Result<Option<SyntaxReferenceInSet>> {
+        Ok(match self.get_syntax_set_by_name(language) {
+            Some(syntax_set) => syntax_set.find_syntax_by_name(language).map(|syntax| SyntaxReferenceInSet { syntax, syntax_set }),
+            None => None,
+        })
+    }
     fn find_syntax_by_name(&self, name: &str) -> Result<Option<SyntaxReferenceInSet>> {
         Ok(match self.get_syntax_set_by_name(name) {
             Some(syntax_set) => syntax_set.find_syntax_by_name(name).map(|syntax| SyntaxReferenceInSet { syntax, syntax_set }),
@@ -79,12 +85,6 @@ impl MinimalAssets {
         })
     }
 
-    fn find_syntax_by_token(&self, language: &str) -> Result<Option<SyntaxReferenceInSet>> {
-        Ok(match self.get_syntax_set_by_name(language) {
-            Some(syntax_set) => syntax_set.find_syntax_by_name(language).map(|syntax| SyntaxReferenceInSet { syntax, syntax_set }),
-            None => None,
-        })
-    }
 
     fn get_extension_syntax(&self, file_name: &OsStr) -> Result<Option<SyntaxReferenceInSet>> {
         let mut syntax = self.find_syntax_by_extension(Some(file_name))?;
@@ -106,39 +106,6 @@ impl MinimalAssets {
         }
     }
  
-    pub fn get_extension_syntax(&self, file_name: &OsStr) -> Result<Option<SyntaxReferenceInSet>> {
-        let mut syntax = self.find_syntax_by_extension(file_name.to_str().unwrap_or_default())?;
-        if syntax.is_none() {
-            syntax = self.find_syntax_by_extension(
-                Path::new(file_name)
-                    .extension()
-                    .and_then(|x| x.to_str())
-                    .unwrap_or_default(),
-            )?;
-        }
-        if syntax.is_none() {
-            syntax = try_with_stripped_suffix(file_name, |stripped_file_name| {
-                self.get_extension_syntax(stripped_file_name) // Note: recursion
-            })?;
-        }
-        Ok(syntax)
-    }
- 
-    fn find_syntax_by_extension(&self, extension: &str) -> Result<Option<SyntaxReferenceInSet>> {
-        match self.get_syntax_set_by_file_extension(extension)? {
-            Some(syntax_set) => Ok(syntax_set
-                .find_syntax_by_extension(extension)
-                .map(|syntax| SyntaxReferenceInSet { syntax, syntax_set })),
-            None => Ok(None),
-        }
-    }
-    pub fn get_syntax_set_by_name(&self, name: &str) -> Result<Option<&SyntaxSet>> {
-        self.index_to_syntax_set(
-            self.minimal_syntaxes
-                .by_name
-                .get(&name.to_ascii_lowercase()),
-        )
-    }
  
     pub fn get_syntax_set_by_file_extension(&self, extension: &str) -> Result<Option<&SyntaxSet>> {
         self.index_to_syntax_set(
@@ -165,7 +132,6 @@ impl MinimalAssets {
                     }
                 }
             }
-    */
 
 
     fn get_first_line_syntax(
@@ -177,7 +143,9 @@ impl MinimalAssets {
             None => Ok(None),
         }
     }
+    */
 
+    
     fn load_minimal_syntax_set_with_index(&self, index: usize) -> Result<SyntaxSet> {
         let serialized_syntax_set = &self.minimal_syntaxes.serialized_syntax_sets[index];
         asset_from_contents(
