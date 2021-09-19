@@ -130,16 +130,6 @@ impl HighlightingAssets {
         self.get_theme_set().themes.keys().map(|s| s.as_ref())
     }
 
-    /// Finds a [SyntaxSet] that contains a [SyntaxReference] by its name. First
-    /// tries to find a minimal [SyntaxSet]. If none is found, returns the
-    /// [SyntaxSet] that contains all syntaxes.
-    fn get_syntax_set_by_name(&self, name: &str) -> Result<&SyntaxSet> {
-        match self.minimal_assets.get_syntax_set_by_name(name) {
-            Some(syntax_set) => Ok(syntax_set),
-            None => self.get_syntax_set(),
-        }
-    }
-
     /// Use [Self::get_syntax_for_file_name] instead
     #[deprecated]
     pub fn syntax_for_file_name(
@@ -191,8 +181,8 @@ impl HighlightingAssets {
         mapping: &SyntaxMapping,
     ) -> Result<SyntaxReferenceInSet> {
         if let Some(language) = language {
-            let syntax_set = self.get_syntax_set_by_name(language)?;
-            return syntax_set
+            return self
+                .minimal_assets
                 .find_syntax_by_token(language)
                 .map(|syntax| SyntaxReferenceInSet { syntax, syntax_set })
                 .ok_or_else(|| Error::UnknownSyntax(language.to_owned()));
@@ -244,8 +234,8 @@ impl HighlightingAssets {
     }
 
     fn find_syntax_by_name(&self, syntax_name: &str) -> Result<Option<SyntaxReferenceInSet>> {
-        let syntax_set = self.get_syntax_set()?;
-        Ok(syntax_set
+        Ok(self
+            .minimal_assets
             .find_syntax_by_name(syntax_name)
             .map(|syntax| SyntaxReferenceInSet { syntax, syntax_set }))
     }
