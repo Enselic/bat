@@ -63,7 +63,7 @@ impl MinimalAssets {
             .and_then(|index| self.get_minimal_syntax_set_with_index(*index))
     }
 
-    fn find_syntax_by_token(&self, language: &str) -> Result<Option<SyntaxReferenceInSet>> {
+    pub fn find_syntax_by_token(&self, language: &str) -> Result<Option<SyntaxReferenceInSet>> {
         Ok(match self.get_syntax_set_by_name(language) {
             Some(syntax_set) => syntax_set
                 .find_syntax_by_name(language)
@@ -71,7 +71,7 @@ impl MinimalAssets {
             None => None,
         })
     }
-    fn find_syntax_by_name(&self, name: &str) -> Result<Option<SyntaxReferenceInSet>> {
+    pub fn find_syntax_by_name(&self, name: &str) -> Result<Option<SyntaxReferenceInSet>> {
         Ok(match self.get_syntax_set_by_name(name) {
             Some(syntax_set) => syntax_set
                 .find_syntax_by_name(name)
@@ -80,7 +80,10 @@ impl MinimalAssets {
         })
     }
 
-    fn find_syntax_by_extension(&self, e: Option<&OsStr>) -> Result<Option<SyntaxReferenceInSet>> {
+    pub fn find_syntax_by_extension(
+        &self,
+        e: Option<&OsStr>,
+    ) -> Result<Option<SyntaxReferenceInSet>> {
         let extension = e.and_then(|x| x.to_str()).unwrap_or_default();
         Ok(match self.get_syntax_set_by_extension(extension) {
             Some(syntax_set) => syntax_set
@@ -90,7 +93,7 @@ impl MinimalAssets {
         })
     }
 
-    fn get_extension_syntax(&self, file_name: &OsStr) -> Result<Option<SyntaxReferenceInSet>> {
+    pub fn get_extension_syntax(&self, file_name: &OsStr) -> Result<Option<SyntaxReferenceInSet>> {
         let mut syntax = self.find_syntax_by_extension(Some(file_name))?;
         if syntax.is_none() {
             syntax = self.find_syntax_by_extension(Path::new(file_name).extension())?;
