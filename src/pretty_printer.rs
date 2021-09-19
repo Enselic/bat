@@ -234,11 +234,12 @@ impl<'a> PrettyPrinter<'a> {
         self.assets.themes()
     }
 
-    pub fn syntaxes(&self) -> impl Iterator<Item = &SyntaxReference> {
-        // We always use assets from the binary, which are guaranteed to always
-        // be valid, so get_syntaxes() can never fail here
-        self.assets.get_syntaxes().unwrap().iter()
-    }
+    // pub fn syntaxes(&self) -> impl Iterator<Item = &SyntaxReference> {
+    //     panic!("NYI");
+    //     // We always use assets from the binary, which are guaranteed to always
+    //     // be valid, so get_syntaxes() can never fail here
+    //     //self.assets.get_syntaxes().unwrap().iter()
+    // }
 
     /// Pretty-print all specified inputs. This method will "use" all stored inputs.
     /// If you want to call 'print' multiple times, you have to call the appropriate

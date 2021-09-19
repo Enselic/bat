@@ -109,7 +109,7 @@ pub(crate) struct InteractivePrinter<'a> {
     #[cfg(feature = "git")]
     pub line_changes: &'a Option<LineChanges>,
     highlighter: Option<HighlightLines<'a>>,
-    syntax_set: &'a SyntaxSet,
+    syntax_set: Option<&'a SyntaxSet>,
     background_color_highlight: Option<Color>,
 }
 
@@ -168,23 +168,19 @@ impl<'a> InteractivePrinter<'a> {
             .content_type
             .map_or(false, |c| c.is_binary() && !config.show_nonprintable)
         {
-            (None, assets.get_syntax_set()?)
+            (None, None)
         } else {
             // Determine the type of syntax for highlighting
             let syntax_in_set =
                 match assets.get_syntax(config.language, input, &config.syntax_mapping) {
                     Ok(syntax_in_set) => syntax_in_set,
-                    Err(Error::UndetectedSyntax(_)) => {
-                        let syntax_set = assets.get_syntax_set()?;
-                        let syntax = syntax_set.find_syntax_plain_text();
-                        SyntaxReferenceInSet { syntax, syntax_set }
-                    }
+                    Err(Error::UndetectedSyntax(_)) => assets.get_syntax_by_token("Plain Text")?,
                     Err(e) => return Err(e),
                 };
 
             (
                 Some(HighlightLines::new(syntax_in_set.syntax, theme)),
-                syntax_in_set.syntax_set,
+                Some(syntax_in_set.syntax_set),
             )
         };
 
@@ -389,13 +385,13 @@ impl<'a> Printer for InteractivePrinter<'a> {
         };
 
         let regions = {
-            let highlighter = match self.highlighter {
-                Some(ref mut highlighter) => highlighter,
+            let (highlighter, syntax_set) = match (self.highlighter, self.syntax_set) {
+                (Some(ref mut highlighter), Some(ref syntax_set)) => (highlighter, syntax_set),
                 _ => {
                     return Ok(());
                 }
             };
-            highlighter.highlight(&line, self.syntax_set)
+            highlighter.highlight(&line, syntax_set)
         };
 
         if out_of_range {

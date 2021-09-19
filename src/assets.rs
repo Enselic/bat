@@ -2,8 +2,6 @@ use std::ffi::OsStr;
 use std::fs;
 use std::path::Path;
 
-use lazycell::LazyCell;
-
 use syntect::highlighting::{Theme, ThemeSet};
 use syntect::parsing::{SyntaxReference, SyntaxSet};
 
@@ -16,7 +14,6 @@ use crate::syntax_mapping::{MappingTarget, SyntaxMapping};
 
 use ignored_suffixes::*;
 use minimal_assets::*;
-use serialized_syntax_set::*;
 
 #[cfg(feature = "build-assets")]
 pub use crate::assets::build_assets::*;
@@ -26,13 +23,9 @@ pub(crate) mod assets_metadata;
 mod build_assets;
 mod ignored_suffixes;
 mod minimal_assets;
-mod serialized_syntax_set;
 
 #[derive(Debug)]
 pub struct HighlightingAssets {
-    syntax_set_cell: LazyCell<SyntaxSet>,
-    serialized_syntax_set: SerializedSyntaxSet,
-
     minimal_assets: MinimalAssets,
 
     theme_set: ThemeSet,
@@ -63,14 +56,8 @@ pub(crate) const COMPRESS_SERIALIZED_MINIMAL_SYNTAXES: bool = true;
 pub(crate) const COMPRESS_MINIMAL_SYNTAXES: bool = false;
 
 impl HighlightingAssets {
-    fn new(
-        serialized_syntax_set: SerializedSyntaxSet,
-        minimal_syntaxes: MinimalSyntaxes,
-        theme_set: ThemeSet,
-    ) -> Self {
+    fn new(minimal_syntaxes: MinimalSyntaxes, theme_set: ThemeSet) -> Self {
         HighlightingAssets {
-            syntax_set_cell: LazyCell::new(),
-            serialized_syntax_set,
             minimal_assets: MinimalAssets::new(minimal_syntaxes),
             theme_set,
             fallback_theme: None,
@@ -83,7 +70,6 @@ impl HighlightingAssets {
 
     pub fn from_cache(cache_path: &Path) -> Result<Self> {
         Ok(HighlightingAssets::new(
-            SerializedSyntaxSet::FromFile(cache_path.join("syntaxes.bin")),
             asset_from_cache(
                 &cache_path.join("minimal_syntaxes.bin"),
                 "minimal syntax sets",
@@ -94,32 +80,11 @@ impl HighlightingAssets {
     }
 
     pub fn from_binary() -> Self {
-        HighlightingAssets::new(
-            SerializedSyntaxSet::FromBinary(get_serialized_integrated_syntaxset()),
-            get_integrated_minimal_syntaxes(),
-            get_integrated_themeset(),
-        )
+        HighlightingAssets::new(get_integrated_minimal_syntaxes(), get_integrated_themeset())
     }
 
     pub fn set_fallback_theme(&mut self, theme: &'static str) {
         self.fallback_theme = Some(theme);
-    }
-
-    pub(crate) fn get_syntax_set(&self) -> Result<&SyntaxSet> {
-        self.syntax_set_cell
-            .try_borrow_with(|| self.serialized_syntax_set.deserialize())
-    }
-
-    /// Use [Self::get_syntaxes] instead
-    #[deprecated]
-    pub fn syntaxes(&self) -> &[SyntaxReference] {
-        self.get_syntax_set()
-            .expect(".syntaxes() is deprecated, use .get_syntaxes() instead")
-            .syntaxes()
-    }
-
-    pub fn get_syntaxes(&self) -> Result<&[SyntaxReference]> {
-        Ok(self.get_syntax_set()?.syntaxes())
     }
 
     fn get_theme_set(&self) -> &ThemeSet {
@@ -178,6 +143,12 @@ impl HighlightingAssets {
         }
     }
 
+    pub(crate) fn get_syntax_by_token(&self, language: &str) -> Result<SyntaxReferenceInSet> {
+        self.minimal_assets
+            .find_syntax_by_token(language)?
+            .ok_or_else(|| Error::UnknownSyntax(language.to_owned()))
+    }
+
     pub(crate) fn get_syntax(
         &self,
         language: Option<&str>,
@@ -185,10 +156,7 @@ impl HighlightingAssets {
         mapping: &SyntaxMapping,
     ) -> Result<SyntaxReferenceInSet> {
         if let Some(language) = language {
-            return self
-                .minimal_assets
-                .find_syntax_by_token(language)?
-                .ok_or_else(|| Error::UnknownSyntax(language.to_owned()));
+            return self.get_syntax_by_token(language);
         }
 
         // Get the path of the file:

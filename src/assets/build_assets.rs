@@ -90,8 +90,9 @@ fn build_syntax_set_builder(
         builder.add_plain_text_syntax();
         builder
     } else {
-        from_binary::<SyntaxSet>(get_serialized_integrated_syntaxset(), COMPRESS_SYNTAXES)
-            .into_builder()
+        panic!("NYI");
+        // from_binary::<SyntaxSet>(get_serialized_integrated_syntaxset(), COMPRESS_SYNTAXES)
+        //     .into_builder()
     };
 
     let syntax_dir = source_dir.join("syntaxes");
