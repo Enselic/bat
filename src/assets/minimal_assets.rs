@@ -70,7 +70,9 @@ impl MinimalAssets {
         })
     }
 
-    fn find_syntax_by_extension(&self, name: &str) -> Result<Option<SyntaxReferenceInSet>> {
+    fn find_syntax_by_extension(&self, e: Option<&OsStr>) -> Result<Option<SyntaxReferenceInSet>> {
+           let extension = e.and_then(|x| x.to_str()).unwrap_or_default();
+
         Ok(match self.get_syntax_set_by_extension(name) {
             Some(syntax_set) => syntax_set.find_syntax_by_extension(name).map(|syntax| SyntaxReferenceInSet { syntax, syntax_set }),
             None => None,
