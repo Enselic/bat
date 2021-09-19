@@ -82,6 +82,7 @@ fn get_syntax_mapping_to_paths<'a>(
 pub fn get_languages(config: &Config) -> Result<String> {
     let mut result: String = String::new();
 
+    /* TODO
     let assets = assets_from_cache_or_binary(config.use_custom_assets)?;
     let mut languages = assets
         .get_syntaxes()?
@@ -168,6 +169,7 @@ pub fn get_languages(config: &Config) -> Result<String> {
             result += "\n";
         }
     }
+    */
 
     Ok(result)
 }

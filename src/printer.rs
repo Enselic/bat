@@ -385,8 +385,14 @@ impl<'a> Printer for InteractivePrinter<'a> {
         };
 
         let regions = {
-            let (highlighter, syntax_set) = match (self.highlighter, self.syntax_set) {
-                (Some(ref mut highlighter), Some(ref syntax_set)) => (highlighter, syntax_set),
+            let highlighter = match self.highlighter {
+                Some(ref mut highlighter) => highlighter,
+                _ => {
+                    return Ok(());
+                }
+            };
+            let syntax_set = match self.syntax_set {
+                Some(ref syntax_set) => syntax_set,
                 _ => {
                     return Ok(());
                 }
