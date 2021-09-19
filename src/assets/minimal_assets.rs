@@ -29,8 +29,8 @@ pub(crate) struct MinimalSyntaxes {
     /// Same as [Self.by_name] but by file extension
     pub(crate) by_file_extension: HashMap<String, usize>,
 
-        /// TODO
-        pub(crate) by_first_line_match: Vec<Vec<String>>,
+    /// TODO
+    pub(crate) by_first_line_match: Vec<Vec<String>>,
 
     /// Serialized [SyntaxSet]s. Whether or not this data is compressed is
     /// decided by [COMPRESS_SERIALIZED_MINIMAL_SYNTAXES]
@@ -65,26 +65,31 @@ impl MinimalAssets {
 
     fn find_syntax_by_token(&self, language: &str) -> Result<Option<SyntaxReferenceInSet>> {
         Ok(match self.get_syntax_set_by_name(language) {
-            Some(syntax_set) => syntax_set.find_syntax_by_name(language).map(|syntax| SyntaxReferenceInSet { syntax, syntax_set }),
+            Some(syntax_set) => syntax_set
+                .find_syntax_by_name(language)
+                .map(|syntax| SyntaxReferenceInSet { syntax, syntax_set }),
             None => None,
         })
     }
     fn find_syntax_by_name(&self, name: &str) -> Result<Option<SyntaxReferenceInSet>> {
         Ok(match self.get_syntax_set_by_name(name) {
-            Some(syntax_set) => syntax_set.find_syntax_by_name(name).map(|syntax| SyntaxReferenceInSet { syntax, syntax_set }),
+            Some(syntax_set) => syntax_set
+                .find_syntax_by_name(name)
+                .map(|syntax| SyntaxReferenceInSet { syntax, syntax_set }),
             None => None,
         })
     }
 
     fn find_syntax_by_extension(&self, e: Option<&OsStr>) -> Result<Option<SyntaxReferenceInSet>> {
-           let extension = e.and_then(|x| x.to_str()).unwrap_or_default();
+        let extension = e.and_then(|x| x.to_str()).unwrap_or_default();
 
         Ok(match self.get_syntax_set_by_extension(extension) {
-            Some(syntax_set) => syntax_set.find_syntax_by_extension(extension).map(|syntax| SyntaxReferenceInSet { syntax, syntax_set }),
+            Some(syntax_set) => syntax_set
+                .find_syntax_by_extension(extension)
+                .map(|syntax| SyntaxReferenceInSet { syntax, syntax_set }),
             None => None,
         })
     }
-
 
     fn get_extension_syntax(&self, file_name: &OsStr) -> Result<Option<SyntaxReferenceInSet>> {
         let mut syntax = self.find_syntax_by_extension(Some(file_name))?;
@@ -105,8 +110,8 @@ impl MinimalAssets {
             syntax_set => Ok(syntax_set),
         }
     }
- 
- 
+
+    /*
     pub fn get_syntax_set_by_file_extension(&self, extension: &str) -> Result<Option<&SyntaxSet>> {
         self.index_to_syntax_set(
             self.minimal_syntaxes
@@ -114,10 +119,8 @@ impl MinimalAssets {
                 .get(&extension.to_ascii_lowercase()),
         )
 
-            /*
                 let l = String::from_utf8(reader.first_line.clone()).map_err(|e| format!("{}", e))?;
             let s = &l;
- 
             for (index, first_line_matches) in
                 self.minimal_syntaxes.by_first_line_match.iter().enumerate()
             {
@@ -145,7 +148,6 @@ impl MinimalAssets {
     }
     */
 
-    
     fn load_minimal_syntax_set_with_index(&self, index: usize) -> Result<SyntaxSet> {
         let serialized_syntax_set = &self.minimal_syntaxes.serialized_syntax_sets[index];
         asset_from_contents(
