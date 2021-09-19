@@ -243,10 +243,6 @@ impl HighlightingAssets {
     }
 }
 
-pub(crate) fn get_serialized_integrated_syntaxset() -> &'static [u8] {
-    include_bytes!("../assets/syntaxes.bin")
-}
-
 pub(crate) fn get_integrated_themeset() -> ThemeSet {
     from_binary(include_bytes!("../assets/themes.bin"), COMPRESS_THEMES)
 }
