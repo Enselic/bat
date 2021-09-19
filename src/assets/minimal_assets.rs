@@ -53,14 +53,14 @@ impl MinimalAssets {
         self.minimal_syntaxes
             .by_name
             .get(&name.to_ascii_lowercase())
-            .and_then(|index| self.get_syntax_set_with_index(*index))
+            .and_then(|index| self.get_minimal_syntax_set_with_index(*index))
     }
 
     pub fn get_syntax_set_by_extension(&self, extension: &str) -> Option<&SyntaxSet> {
         self.minimal_syntaxes
             .by_file_extension
             .get(&extension.to_ascii_lowercase())
-            .and_then(|index| self.get_syntax_set_with_index(*index))
+            .and_then(|index| self.get_minimal_syntax_set_with_index(*index))
     }
 
     fn find_syntax_by_token(&self, language: &str) -> Result<Option<SyntaxReferenceInSet>> {
@@ -82,7 +82,6 @@ impl MinimalAssets {
 
     fn find_syntax_by_extension(&self, e: Option<&OsStr>) -> Result<Option<SyntaxReferenceInSet>> {
         let extension = e.and_then(|x| x.to_str()).unwrap_or_default();
-
         Ok(match self.get_syntax_set_by_extension(extension) {
             Some(syntax_set) => syntax_set
                 .find_syntax_by_extension(extension)
@@ -105,10 +104,10 @@ impl MinimalAssets {
     }
 
     pub fn get_syntax_set_by_token(&self, language: &str) -> Result<Option<&SyntaxSet>> {
-        match self.get_syntax_set_by_name(language) {
-            None => self.get_syntax_set_by_file_extension(language),
-            syntax_set => Ok(syntax_set),
-        }
+        Ok(match self.get_syntax_set_by_name(language) {
+            None => self.get_syntax_set_by_extension(language),
+            syntax_set => syntax_set,
+        })
     }
 
     /*
