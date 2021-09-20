@@ -60,6 +60,7 @@ _bat_:run() {
 
 	local cache_dir
 	cache_dir="$($BAT --cache-dir)"
+	# TODO: Call minimal_syntaxes.bin syntaxes.bin instead?
 	if [[ -f "${cache_dir}/syntaxes.bin" ]]; then
 		_print_command "$BAT" "--list-languages"
 		echo "Found custom syntax set."

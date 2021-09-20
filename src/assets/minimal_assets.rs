@@ -64,9 +64,9 @@ impl MinimalAssets {
     }
 
     pub fn find_syntax_by_token(&self, language: &str) -> Result<Option<SyntaxReferenceInSet>> {
-        Ok(match self.get_syntax_set_by_name(language) {
+        Ok(match self.get_syntax_set_by_token(language)? {
             Some(syntax_set) => syntax_set
-                .find_syntax_by_name(language)
+                .find_syntax_by_token(language)
                 .map(|syntax| SyntaxReferenceInSet { syntax, syntax_set }),
             None => None,
         })
@@ -107,8 +107,8 @@ impl MinimalAssets {
     }
 
     pub fn get_syntax_set_by_token(&self, language: &str) -> Result<Option<&SyntaxSet>> {
-        Ok(match self.get_syntax_set_by_name(language) {
-            None => self.get_syntax_set_by_extension(language),
+        Ok(match self.get_syntax_set_by_extension(language) {
+            None => self.get_syntax_set_by_name(language),
             syntax_set => syntax_set,
         })
     }
