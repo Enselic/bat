@@ -2,8 +2,6 @@ use std::ffi::OsStr;
 use std::fs;
 use std::path::Path;
 
-use lazycell::LazyCell;
-
 use syntect::highlighting::{Theme, ThemeSet};
 use syntect::parsing::{SyntaxReference, SyntaxSet};
 
@@ -16,7 +14,6 @@ use crate::syntax_mapping::{MappingTarget, SyntaxMapping};
 
 use ignored_suffixes::*;
 use minimal_assets::*;
-use serialized_syntax_set::*;
 
 #[cfg(feature = "build-assets")]
 pub use crate::assets::build_assets::*;
@@ -26,15 +23,11 @@ pub(crate) mod assets_metadata;
 mod build_assets;
 mod ignored_suffixes;
 mod minimal_assets;
-mod serialized_syntax_set;
 mod syntaxes_iter;
 
 #[derive(Debug)]
 pub struct HighlightingAssets {
-    syntax_set_cell: LazyCell<SyntaxSet>,
-    serialized_syntax_set: SerializedSyntaxSet,
-
-    minimal_assets: MinimalAssets,
+    pub(crate) minimal_assets: MinimalAssets,
 
     theme_set: ThemeSet,
     fallback_theme: Option<&'static str>,
@@ -45,9 +38,6 @@ pub struct SyntaxReferenceInSet<'a> {
     pub syntax: &'a SyntaxReference,
     pub syntax_set: &'a SyntaxSet,
 }
-
-/// Compress for size of ~700 kB instead of ~4600 kB at the cost of ~30% longer deserialization time
-pub(crate) const COMPRESS_SYNTAXES: bool = true;
 
 /// Compress for size of ~20 kB instead of ~200 kB at the cost of ~30% longer deserialization time
 pub(crate) const COMPRESS_THEMES: bool = true;
@@ -64,14 +54,8 @@ pub(crate) const COMPRESS_SERIALIZED_MINIMAL_SYNTAXES: bool = true;
 pub(crate) const COMPRESS_MINIMAL_SYNTAXES: bool = false;
 
 impl HighlightingAssets {
-    fn new(
-        serialized_syntax_set: SerializedSyntaxSet,
-        minimal_syntaxes: MinimalSyntaxes,
-        theme_set: ThemeSet,
-    ) -> Self {
+    fn new(minimal_syntaxes: MinimalSyntaxes, theme_set: ThemeSet) -> Self {
         HighlightingAssets {
-            syntax_set_cell: LazyCell::new(),
-            serialized_syntax_set,
             minimal_assets: MinimalAssets::new(minimal_syntaxes),
             theme_set,
             fallback_theme: None,
@@ -84,7 +68,6 @@ impl HighlightingAssets {
 
     pub fn from_cache(cache_path: &Path) -> Result<Self> {
         Ok(HighlightingAssets::new(
-            SerializedSyntaxSet::FromFile(cache_path.join("syntaxes.bin")),
             asset_from_cache(
                 &cache_path.join("minimal_syntaxes.bin"),
                 "minimal syntax sets",
@@ -95,32 +78,15 @@ impl HighlightingAssets {
     }
 
     pub fn from_binary() -> Self {
-        HighlightingAssets::new(
-            SerializedSyntaxSet::FromBinary(get_serialized_integrated_syntaxset()),
-            get_integrated_minimal_syntaxes(),
-            get_integrated_themeset(),
-        )
+        HighlightingAssets::new(get_integrated_minimal_syntaxes(), get_integrated_themeset())
     }
 
     pub fn set_fallback_theme(&mut self, theme: &'static str) {
         self.fallback_theme = Some(theme);
     }
 
-    pub(crate) fn get_syntax_set(&self) -> Result<&SyntaxSet> {
-        self.syntax_set_cell
-            .try_borrow_with(|| self.serialized_syntax_set.deserialize())
-    }
-
-    /// Use [Self::syntaxes_iter] instead
-    #[deprecated]
-    pub fn syntaxes(&self) -> &[SyntaxReference] {
-        self.get_syntax_set()
-            .expect(".syntaxes() is deprecated, use .syntaxes_iter() instead")
-            .syntaxes()
-    }
-
     pub fn syntaxes_iter(&self) -> impl Iterator<Item = &SyntaxReference> {
-        syntaxes_iter::SyntaxesIter::new(self)
+        self.minimal_assets.syntaxes_iter()
     }
 
     fn get_theme_set(&self) -> &ThemeSet {
@@ -129,16 +95,6 @@ impl HighlightingAssets {
 
     pub fn themes(&self) -> impl Iterator<Item = &str> {
         self.get_theme_set().themes.keys().map(|s| s.as_ref())
-    }
-
-    /// Finds a [SyntaxSet] that contains a [SyntaxReference] by its name. First
-    /// tries to find a minimal [SyntaxSet]. If none is found, returns the
-    /// [SyntaxSet] that contains all syntaxes.
-    fn get_syntax_set_by_name(&self, name: &str) -> Result<&SyntaxSet> {
-        match self.minimal_assets.get_syntax_set_by_name(name) {
-            Some(syntax_set) => Ok(syntax_set),
-            None => self.get_syntax_set(),
-        }
     }
 
     /// Use [Self::get_syntax_for_path] instead
@@ -184,12 +140,14 @@ impl HighlightingAssets {
             }
 
             Some(MappingTarget::MapTo(syntax_name)) => self
+                .minimal_assets
                 .find_syntax_by_name(syntax_name)?
                 .ok_or_else(|| Error::UnknownSyntax(syntax_name.to_owned())),
 
             None => {
                 let file_name = path.file_name().unwrap_or_default();
-                self.get_extension_syntax(file_name)?
+                self.minimal_assets
+                    .get_extension_syntax(file_name)?
                     .ok_or_else(|| Error::UndetectedSyntax(path.to_string_lossy().into()))
             }
         }
@@ -212,6 +170,12 @@ impl HighlightingAssets {
         }
     }
 
+    pub(crate) fn find_syntax_by_token(&self, language: &str) -> Result<SyntaxReferenceInSet> {
+        self.minimal_assets
+            .find_syntax_by_token(language)?
+            .ok_or_else(|| Error::UnknownSyntax(language.to_owned()))
+    }
+
     pub(crate) fn get_syntax(
         &self,
         language: Option<&str>,
@@ -219,11 +183,7 @@ impl HighlightingAssets {
         mapping: &SyntaxMapping,
     ) -> Result<SyntaxReferenceInSet> {
         if let Some(language) = language {
-            let syntax_set = self.get_syntax_set_by_name(language)?;
-            return syntax_set
-                .find_syntax_by_token(language)
-                .map(|syntax| SyntaxReferenceInSet { syntax, syntax_set })
-                .ok_or_else(|| Error::UnknownSyntax(language.to_owned()));
+            return self.find_syntax_by_token(language);
         }
 
         let path = input.path();
@@ -246,58 +206,22 @@ impl HighlightingAssets {
         }
     }
 
-    pub(crate) fn find_syntax_by_name(
-        &self,
-        syntax_name: &str,
-    ) -> Result<Option<SyntaxReferenceInSet>> {
-        let syntax_set = self.get_syntax_set()?;
-        Ok(syntax_set
-            .find_syntax_by_name(syntax_name)
-            .map(|syntax| SyntaxReferenceInSet { syntax, syntax_set }))
-    }
-
-    fn find_syntax_by_extension(&self, e: Option<&OsStr>) -> Result<Option<SyntaxReferenceInSet>> {
-        let syntax_set = self.get_syntax_set()?;
-        let extension = e.and_then(|x| x.to_str()).unwrap_or_default();
-        Ok(syntax_set
-            .find_syntax_by_extension(extension)
-            .map(|syntax| SyntaxReferenceInSet { syntax, syntax_set }))
-    }
-
-    fn get_extension_syntax(&self, file_name: &OsStr) -> Result<Option<SyntaxReferenceInSet>> {
-        let mut syntax = self.find_syntax_by_extension(Some(file_name))?;
-        if syntax.is_none() {
-            syntax = self.find_syntax_by_extension(Path::new(file_name).extension())?;
-        }
-        if syntax.is_none() {
-            syntax = try_with_stripped_suffix(file_name, |stripped_file_name| {
-                self.get_extension_syntax(stripped_file_name) // Note: recursion
-            })?;
-        }
-        Ok(syntax)
-    }
-
     fn get_first_line_syntax(
         &self,
         reader: &mut InputReader,
     ) -> Result<Option<SyntaxReferenceInSet>> {
-        let syntax_set = self.get_syntax_set()?;
-        Ok(String::from_utf8(reader.first_line.clone())
-            .ok()
-            .and_then(|l| syntax_set.find_syntax_by_first_line(&l))
-            .map(|syntax| SyntaxReferenceInSet { syntax, syntax_set }))
+        match String::from_utf8(reader.first_line.clone()).ok() {
+            Some(line) => self.minimal_assets.find_syntax_by_first_line(&line),
+            None => Ok(None),
+        }
     }
-}
-
-pub(crate) fn get_serialized_integrated_syntaxset() -> &'static [u8] {
-    include_bytes!("../assets/syntaxes.bin")
 }
 
 pub(crate) fn get_integrated_themeset() -> ThemeSet {
     from_binary(include_bytes!("../assets/themes.bin"), COMPRESS_THEMES)
 }
 
-fn get_integrated_minimal_syntaxes() -> MinimalSyntaxes {
+pub(crate) fn get_integrated_minimal_syntaxes() -> MinimalSyntaxes {
     from_binary(
         include_bytes!("../assets/minimal_syntaxes.bin"),
         COMPRESS_MINIMAL_SYNTAXES,

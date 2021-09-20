@@ -1,3 +1,4 @@
+/*
 use super::*;
 
 pub struct SyntaxesIter<'a> {
@@ -31,3 +32,4 @@ impl<'a> Iterator for SyntaxesIter<'a> {
         }
     }
 }
+*/

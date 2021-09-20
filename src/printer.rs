@@ -188,6 +188,7 @@ impl<'a> InteractivePrinter<'a> {
                 match assets.get_syntax(config.language, input, &config.syntax_mapping) {
                     Ok(syntax_in_set) => syntax_in_set,
                     Err(Error::UndetectedSyntax(_)) => assets
+                        .minimal_assets
                         .find_syntax_by_name("Plain Text")?
                         .expect("A plain text syntax is available"),
                     Err(e) => return Err(e),

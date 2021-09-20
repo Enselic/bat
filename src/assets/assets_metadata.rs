@@ -37,6 +37,8 @@ impl AssetsMetadata {
         Ok(serde_yaml::from_reader(file)?)
     }
 
+    /// TODO: Update below code with minimal_syntaxes.bin
+    ///
     /// Load metadata about the stored cache file from the given folder.
     ///
     /// There are several possibilities:
