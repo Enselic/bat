@@ -235,9 +235,7 @@ impl<'a> PrettyPrinter<'a> {
     }
 
     pub fn syntaxes(&self) -> impl Iterator<Item = &SyntaxReference> {
-        // We always use assets from the binary, which are guaranteed to always
-        // be valid, so get_syntaxes() can never fail here
-        self.assets.get_syntaxes().unwrap().iter()
+        self.assets.syntaxes_iter()
     }
 
     /// Pretty-print all specified inputs. This method will "use" all stored inputs.

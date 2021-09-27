@@ -27,6 +27,7 @@ mod build_assets;
 mod ignored_suffixes;
 mod minimal_assets;
 mod serialized_syntax_set;
+mod syntaxes_iter;
 
 #[derive(Debug)]
 pub struct HighlightingAssets {
@@ -110,16 +111,16 @@ impl HighlightingAssets {
             .try_borrow_with(|| self.serialized_syntax_set.deserialize())
     }
 
-    /// Use [Self::get_syntaxes] instead
+    /// Use [Self::syntaxes_iter] instead
     #[deprecated]
     pub fn syntaxes(&self) -> &[SyntaxReference] {
         self.get_syntax_set()
-            .expect(".syntaxes() is deprecated, use .get_syntaxes() instead")
+            .expect(".syntaxes() is deprecated, use .syntaxes_iter() instead")
             .syntaxes()
     }
 
-    pub fn get_syntaxes(&self) -> Result<&[SyntaxReference]> {
-        Ok(self.get_syntax_set()?.syntaxes())
+    pub fn syntaxes_iter(&self) -> impl Iterator<Item = &SyntaxReference> {
+        syntaxes_iter::SyntaxesIter::new(self)
     }
 
     fn get_theme_set(&self) -> &ThemeSet {
