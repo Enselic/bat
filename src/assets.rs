@@ -263,6 +263,13 @@ impl HighlightingAssets {
             .map(|syntax| SyntaxReferenceInSet { syntax, syntax_set }))
     }
 
+    fn find_syntax_by_first_line(&self, first_line: &str) -> Result<Option<SyntaxReferenceInSet>> {
+        let syntax_set = self.get_syntax_set()?;
+        Ok(syntax_set
+            .find_syntax_by_first_line(first_line)
+            .map(|syntax| SyntaxReferenceInSet { syntax, syntax_set }))
+    }
+
     fn get_extension_syntax(&self, file_name: &OsStr) -> Result<Option<SyntaxReferenceInSet>> {
         let mut syntax = self.find_syntax_by_extension(Some(file_name))?;
         if syntax.is_none() {
@@ -280,11 +287,10 @@ impl HighlightingAssets {
         &self,
         reader: &mut InputReader,
     ) -> Result<Option<SyntaxReferenceInSet>> {
-        let syntax_set = self.get_syntax_set()?;
-        Ok(String::from_utf8(reader.first_line.clone())
-            .ok()
-            .and_then(|l| syntax_set.find_syntax_by_first_line(&l))
-            .map(|syntax| SyntaxReferenceInSet { syntax, syntax_set }))
+        match String::from_utf8(reader.first_line.clone()).ok() {
+            Some(line) => self.find_syntax_by_first_line(&line),
+            None => Ok(None),
+        }
     }
 }
 
