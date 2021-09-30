@@ -130,16 +130,6 @@ impl HighlightingAssets {
         self.get_theme_set().themes.keys().map(|s| s.as_ref())
     }
 
-    /// Finds a [SyntaxSet] that contains a [SyntaxReference] by its name. First
-    /// tries to find a minimal [SyntaxSet]. If none is found, returns the
-    /// [SyntaxSet] that contains all syntaxes.
-    fn get_syntax_set_by_name(&self, name: &str) -> Result<&SyntaxSet> {
-        match self.minimal_assets.get_syntax_set_by_name(name) {
-            Some(syntax_set) => Ok(syntax_set),
-            None => self.get_syntax_set(),
-        }
-    }
-
     /// Use [Self::get_syntax_for_path] instead
     #[deprecated]
     pub fn syntax_for_file_name(
@@ -243,6 +233,39 @@ impl HighlightingAssets {
         }
     }
 
+    fn get_extension_syntax(&self, file_name: &OsStr) -> Result<Option<SyntaxReferenceInSet>> {
+        let mut syntax = self.find_syntax_by_extension(Some(file_name))?;
+        if syntax.is_none() {
+            syntax = self.find_syntax_by_extension(Path::new(file_name).extension())?;
+        }
+        if syntax.is_none() {
+            syntax = try_with_stripped_suffix(file_name, |stripped_file_name| {
+                self.get_extension_syntax(stripped_file_name) // Note: recursion
+            })?;
+        }
+        Ok(syntax)
+    }
+
+    fn get_first_line_syntax(
+        &self,
+        reader: &mut InputReader,
+    ) -> Result<Option<SyntaxReferenceInSet>> {
+        match String::from_utf8(reader.first_line.clone()).ok() {
+            Some(line) => self.find_syntax_by_first_line(&line),
+            None => Ok(None),
+        }
+    }
+
+    /// Finds a [SyntaxSet] that contains a [SyntaxReference] by its name. First
+    /// tries to find a minimal [SyntaxSet]. If none is found, returns the
+    /// [SyntaxSet] that contains all syntaxes.
+    fn get_syntax_set_by_name(&self, name: &str) -> Result<&SyntaxSet> {
+        match self.minimal_assets.get_syntax_set_by_name(name) {
+            Some(syntax_set) => Ok(syntax_set),
+            None => self.get_syntax_set(),
+        }
+    }
+
     pub(crate) fn find_syntax_by_token(
         &self,
         language: &str,
@@ -276,29 +299,6 @@ impl HighlightingAssets {
         Ok(syntax_set
             .find_syntax_by_first_line(first_line)
             .map(|syntax| SyntaxReferenceInSet { syntax, syntax_set }))
-    }
-
-    fn get_extension_syntax(&self, file_name: &OsStr) -> Result<Option<SyntaxReferenceInSet>> {
-        let mut syntax = self.find_syntax_by_extension(Some(file_name))?;
-        if syntax.is_none() {
-            syntax = self.find_syntax_by_extension(Path::new(file_name).extension())?;
-        }
-        if syntax.is_none() {
-            syntax = try_with_stripped_suffix(file_name, |stripped_file_name| {
-                self.get_extension_syntax(stripped_file_name) // Note: recursion
-            })?;
-        }
-        Ok(syntax)
-    }
-
-    fn get_first_line_syntax(
-        &self,
-        reader: &mut InputReader,
-    ) -> Result<Option<SyntaxReferenceInSet>> {
-        match String::from_utf8(reader.first_line.clone()).ok() {
-            Some(line) => self.find_syntax_by_first_line(&line),
-            None => Ok(None),
-        }
     }
 }
 
