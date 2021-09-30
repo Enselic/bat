@@ -218,10 +218,8 @@ impl HighlightingAssets {
         mapping: &SyntaxMapping,
     ) -> Result<SyntaxReferenceInSet> {
         if let Some(language) = language {
-            let syntax_set = self.get_syntax_set_by_name(language)?;
-            return syntax_set
-                .find_syntax_by_token(language)
-                .map(|syntax| SyntaxReferenceInSet { syntax, syntax_set })
+            return self
+                .find_syntax_by_token(language)?
                 .ok_or_else(|| Error::UnknownSyntax(language.to_owned()));
         }
 
@@ -243,6 +241,16 @@ impl HighlightingAssets {
                 .ok_or(Error::UndetectedSyntax(path)),
             _ => path_syntax,
         }
+    }
+
+    pub(crate) fn find_syntax_by_token(
+        &self,
+        language: &str,
+    ) -> Result<Option<SyntaxReferenceInSet>> {
+        let syntax_set = self.get_syntax_set_by_name(language)?;
+        Ok(syntax_set
+            .find_syntax_by_token(language)
+            .map(|syntax| SyntaxReferenceInSet { syntax, syntax_set }))
     }
 
     pub(crate) fn find_syntax_by_name(
