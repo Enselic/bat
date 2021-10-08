@@ -25,6 +25,7 @@ pub(crate) mod assets_metadata;
 #[cfg(feature = "build-assets")]
 mod build_assets;
 mod ignored_suffixes;
+mod lazy_theme_set;
 mod minimal_assets;
 mod serialized_syntax_set;
 
@@ -49,7 +50,7 @@ pub struct SyntaxReferenceInSet<'a> {
 pub(crate) const COMPRESS_SYNTAXES: bool = true;
 
 /// Compress for size of ~20 kB instead of ~200 kB at the cost of ~30% longer deserialization time
-pub(crate) const COMPRESS_THEMES: bool = true;
+pub(crate) const COMPRESS_THEMES: bool = false;
 
 /// Compress for size of ~400 kB instead of ~2100 kB at the cost of ~30% longer deserialization time
 pub(crate) const COMPRESS_SERIALIZED_MINIMAL_SYNTAXES: bool = true;
