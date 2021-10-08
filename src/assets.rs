@@ -4,7 +4,7 @@ use std::path::Path;
 
 use lazycell::LazyCell;
 
-use syntect::highlighting::{Theme, ThemeSet};
+use syntect::highlighting::{Theme};
 use syntect::parsing::{SyntaxReference, SyntaxSet};
 
 use path_abs::PathAbs;
@@ -15,6 +15,7 @@ use crate::input::{InputReader, OpenedInput};
 use crate::syntax_mapping::{MappingTarget, SyntaxMapping};
 
 use ignored_suffixes::*;
+use lazy_theme_set::*;
 use minimal_assets::*;
 use serialized_syntax_set::*;
 
@@ -36,7 +37,7 @@ pub struct HighlightingAssets {
 
     minimal_assets: MinimalAssets,
 
-    theme_set: ThemeSet,
+    theme_set: lazy_theme_set::LazyThemeSet,
     fallback_theme: Option<&'static str>,
 }
 
@@ -67,7 +68,7 @@ impl HighlightingAssets {
     fn new(
         serialized_syntax_set: SerializedSyntaxSet,
         minimal_syntaxes: MinimalSyntaxes,
-        theme_set: ThemeSet,
+        theme_set: LazyThemeSet,
     ) -> Self {
         HighlightingAssets {
             syntax_set_cell: LazyCell::new(),
@@ -123,12 +124,13 @@ impl HighlightingAssets {
         Ok(self.get_syntax_set()?.syntaxes())
     }
 
-    fn get_theme_set(&self) -> &ThemeSet {
+    fn get_theme_set(&self) -> &LazyThemeSet {
         &self.theme_set
     }
 
     pub fn themes(&self) -> impl Iterator<Item = &str> {
-        self.get_theme_set().themes.keys().map(|s| s.as_ref())
+        std::iter::empty()
+        //self.get_theme_set().themes.keys().map(|s| s.as_ref())
     }
 
     /// Finds a [SyntaxSet] that contains a [SyntaxReference] by its name. First
@@ -196,7 +198,7 @@ impl HighlightingAssets {
     }
 
     pub(crate) fn get_theme(&self, theme: &str) -> &Theme {
-        match self.get_theme_set().themes.get(theme) {
+        match self.get_theme_set().get(theme) {
             Some(theme) => theme,
             None => {
                 if theme == "ansi-light" || theme == "ansi-dark" {
@@ -206,8 +208,7 @@ impl HighlightingAssets {
                 if !theme.is_empty() {
                     bat_warning!("Unknown theme '{}', using default.", theme)
                 }
-                &self.get_theme_set().themes
-                    [self.fallback_theme.unwrap_or_else(|| Self::default_theme())]
+                &self.get_theme_set().get(self.fallback_theme.unwrap_or_else(|| Self::default_theme())).unwrap()
             }
         }
     }
@@ -293,7 +294,7 @@ pub(crate) fn get_serialized_integrated_syntaxset() -> &'static [u8] {
     include_bytes!("../assets/syntaxes.bin")
 }
 
-pub(crate) fn get_integrated_themeset() -> ThemeSet {
+pub(crate) fn get_integrated_themeset() -> LazyThemeSet {
     from_binary(include_bytes!("../assets/themes.bin"), COMPRESS_THEMES)
 }
 

@@ -8,7 +8,7 @@ use lazycell::LazyCell;
 use syntect::highlighting::Theme;
 
 #[derive(Debug, Default, Serialize, Deserialize)]
-struct LazyThemeSet {
+pub struct LazyThemeSet {
     /// This is a [`BTreeMap`] because that's what [`syntect::highlighting::Theme`] uses
     themes: std::collections::BTreeMap<String, LazyTheme>,
 }
@@ -22,8 +22,8 @@ struct LazyTheme {
 }
 
 impl LazyThemeSet {
-    pub fn get(&self, name: &str) -> &Theme {
-        self.themes.get(name).unwrap().borrow().unwrap()
+    pub fn get(&self, name: &str) -> Option<&Theme> {
+        self.themes.get(name).and_then(|t| t.borrow().ok())
     }
 }
 
