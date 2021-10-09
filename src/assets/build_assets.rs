@@ -56,11 +56,11 @@ pub fn build(
     )
 }
 
-fn build_theme_set(source_dir: &Path, include_integrated_assets: bool) -> ThemeSet {
+fn build_theme_set(source_dir: &Path, include_integrated_assets: bool) -> LazyThemeSet {
     let mut theme_set = if include_integrated_assets {
-        crate::assets::get_integrated_themeset()
+        crate::assets::get_integrated_themeset().into()
     } else {
-        ThemeSet::new()
+        ThemeSet::default()
     };
 
     let theme_dir = source_dir.join("themes");
@@ -80,7 +80,7 @@ fn build_theme_set(source_dir: &Path, include_integrated_assets: bool) -> ThemeS
         );
     }
 
-    theme_set
+    theme_set.into()
 }
 
 fn build_syntax_set_builder(
@@ -120,7 +120,7 @@ fn print_unlinked_contexts(syntax_set: &SyntaxSet) {
 }
 
 fn write_assets(
-    theme_set: &ThemeSet,
+    theme_set: &LazyThemeSet,
     syntax_set: &SyntaxSet,
     minimal_syntaxes: &MinimalSyntaxes,
     target_dir: &Path,
@@ -449,7 +449,7 @@ impl SyntaxSetDependencyBuilder {
     }
 }
 
-fn asset_to_contents<T: serde::Serialize>(
+pub(crate) fn asset_to_contents<T: serde::Serialize>(
     asset: &T,
     description: &str,
     compressed: bool,
