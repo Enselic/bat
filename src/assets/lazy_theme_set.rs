@@ -49,6 +49,7 @@ impl From<LazyThemeSet> for ThemeSet {
     }
 }
 
+#[cfg(feature = "build-assets")]
 impl From<ThemeSet> for LazyThemeSet {
     fn from(theme_set: ThemeSet) -> Self {
         let mut lazy_theme_set = LazyThemeSet::default();
