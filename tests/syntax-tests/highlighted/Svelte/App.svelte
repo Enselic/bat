@@ -27,7 +27,7 @@
 [38;2;255;255;255m</[0m[3;38;2;249;38;114mscript[0m[38;2;255;255;255m>[0m
 
 [38;2;255;255;255m<[0m[3;38;2;249;38;114mscript[0m[38;2;248;248;242m [0m[38;2;166;226;46mtype[0m[38;2;166;226;46m=[0m[38;2;255;255;255m"[0m[38;2;230;219;116mtext/livescript[0m[38;2;255;255;255m"[0m[38;2;255;255;255m>[0m
-[38;2;248;248;242m    [0m[38;2;246;170;17m// This block is a regression test for a bat panic when a LiveScript syntax definition is missing[0m
+[38;2;248;248;242m	[0m[38;2;246;170;17m// This block is a regression test for a bat panic when a LiveScript syntax definition is missing[0m
 [38;2;255;255;255m</[0m[3;38;2;249;38;114mscript[0m[38;2;255;255;255m>[0m
 
 [38;2;255;255;255m<[0m[38;2;249;38;114mstyle[0m[38;2;255;255;255m>[0m
