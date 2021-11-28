@@ -61,3 +61,5 @@ bat cache --build --blank --source="$ASSET_DIR" --target="$ASSET_DIR"
         patch --strip=0 --reverse < "$patch"
     done
 )
+
+create-acknowledgements.sh
