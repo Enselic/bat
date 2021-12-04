@@ -25,13 +25,21 @@ See the LICENSE-APACHE and LICENSE-MIT files for license details.
     for entry in entries {
         let entry = entry.map_err(|e| Error::Msg(format!("{}", e)))?;
         if dir_entry_is_license(&entry) {
-            let contents = std::fs::read_to_string(Path::new(entry.path()))?;
-            // Most license texts wrap at 80 chars so our horizontal divider is 80 chars
-            acknowledgements.push_str("――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――\n");
-            acknowledgements.push_str(&format!("{:?}:\n", &entry.path()));
-            acknowledgements.push_str(&contents);
-            if acknowledgements.chars().last().expect("string is not empty") != '\n' {
-                acknowledgements.push('\n');
+            let license_text = std::fs::read_to_string(Path::new(entry.path()))?;
+            if license_requires_attribution(&license_text) {
+                // Most license texts wrap at 80 chars so our horizontal divider is 80 chars
+                acknowledgements.push_str("――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――\n");
+                acknowledgements.push_str(&format!("{:?}:\n", &entry.path()));
+                acknowledgements.push_str(&license_text);
+                if acknowledgements
+                    .chars()
+                    .last()
+                    .expect("string is not empty")
+                    != '\n'
+                {
+                    acknowledgements.push('\n');
+                }
+            } else {
             }
         }
     }
@@ -41,8 +49,28 @@ See the LICENSE-APACHE and LICENSE-MIT files for license details.
 
 fn dir_entry_is_license(entry: &walkdir::DirEntry) -> bool {
     return if let Some(Some(stem)) = entry.path().file_stem().map(|s| s.to_str()) {
-        stem.to_ascii_uppercase() == "LICENSE"
+        let uppercase_stem = stem.to_ascii_uppercase();
+        uppercase_stem == "LICENSE" || uppercase_stem == "NOTICE"
     } else {
         false
     };
 }
+
+fn license_requires_attribution(license_text: &str) -> bool {
+    // TODO: Replace newline with ' '
+    let markers = vec![
+        "Redistributions in binary form must reproduce the above",
+        // MIT
+        "The above copyright notice and this permission notice shall be included in
+all copies or substantial portions of the Software.",
+
+    ];
+    for marker in markers {
+        if license_text.contains(marker) {
+            return true;
+        }
+    }
+    return false;
+}
+
+// TODO: Tests
