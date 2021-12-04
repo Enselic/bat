@@ -25,7 +25,7 @@ pub fn build(
     write_assets(
         &theme_set,
         &syntax_set,
-        acknowledgements.as_deref(),
+        &acknowledgements,
         target_dir,
         current_version,
     )
@@ -140,7 +140,7 @@ fn print_unlinked_contexts(syntax_set: &SyntaxSet) {
 fn write_assets(
     theme_set: &ThemeSet,
     syntax_set: &SyntaxSet,
-    acknowledgements: Option<&str>,
+    acknowledgements: &Option<String>,
     target_dir: &Path,
     current_version: &str,
 ) -> Result<()> {
@@ -158,13 +158,13 @@ fn write_assets(
         COMPRESS_SYNTAXES,
     )?;
     if let Some(acknowledgements) = acknowledgements {
-        std::fs::write(&target_dir.join("acknowledgements.bin"), acknowledgements)?;
-        // asset_to_cache(
-        //     acknowledgements,
-        //     ,
-        //     "acknowledgements",
-        //     true,
-        // )?;
+        // works: std::fs::write(&target_dir.join("acknowledgements.bin"), acknowledgements)?;
+        asset_to_cache(
+            acknowledgements,
+            &target_dir.join("acknowledgements.bin"),
+            "acknowledgements",
+            COMPRESS_ACKNOWLEDGEMENTS,
+        )?;
     }
 
     print!(
