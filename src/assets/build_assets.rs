@@ -22,7 +22,13 @@ pub fn build(
 
     print_unlinked_contexts(&syntax_set);
 
-    write_assets(&theme_set, &syntax_set, &acknowledgements, target_dir, current_version)
+    write_assets(
+        &theme_set,
+        &syntax_set,
+        &acknowledgements,
+        target_dir,
+        current_version,
+    )
 }
 
 fn build_theme_set(source_dir: &Path, include_integrated_assets: bool) -> ThemeSet {
@@ -82,10 +88,9 @@ pub fn build_acknowledgements(
     source_dir: &Path,
     include_integrated_assets: bool,
 ) -> Result<Option<String>> {
-
     // TODO: Special flag --build-acknowledgements?
     if include_integrated_assets {
-        return Ok(None)
+        return Ok(None);
     }
 
     // Sourced from License section in README.md
@@ -211,7 +216,6 @@ fn asset_to_cache<T: serde::Serialize>(
 #[cfg(test)]
 mod tests {
     use super::*;
-
 
     #[test]
     fn entry_is_license() {
