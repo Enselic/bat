@@ -46,7 +46,7 @@ pub(crate) const COMPRESS_SYNTAXES: bool = true;
 /// Compress for size of ~20 kB instead of ~200 kB at the cost of ~30% longer deserialization time
 pub(crate) const COMPRESS_THEMES: bool = true;
 
-/// Compress for size of ~20 kB instead of ~120 kB
+/// Compress for size of ~10 kB instead of ~120 kB
 pub(crate) const COMPRESS_ACKNOWLEDGEMENTS: bool = true;
 
 impl HighlightingAssets {
