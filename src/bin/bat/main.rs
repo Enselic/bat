@@ -15,6 +15,7 @@ use std::process;
 
 use ansi_term::Colour::Green;
 use ansi_term::Style;
+use bat::assets::get_acknowledgements;
 
 use crate::{
     app::App,
@@ -278,6 +279,12 @@ fn run() -> Result<bool> {
         invoke_bugreport(&app);
         #[cfg(not(feature = "bugreport"))]
         println!("bat has been built without the 'bugreport' feature. The '--diagnostic' option is not available.");
+        return Ok(true);
+    }
+
+    if app.matches.is_present("acknowledgements") {
+        let acknowledgements = bat::assets::get_acknowledgements();
+        println!("{}", acknowledgements);
         return Ok(true);
     }
 

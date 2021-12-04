@@ -298,6 +298,10 @@ pub(crate) fn get_integrated_themeset() -> ThemeSet {
     from_binary(include_bytes!("../assets/themes.bin"), COMPRESS_THEMES)
 }
 
+pub fn get_acknowledgements() -> String {
+    from_binary(include_bytes!("../assets/acknowledgements.bin"), COMPRESS_THEMES)
+}
+
 pub(crate) fn from_binary<T: serde::de::DeserializeOwned>(v: &[u8], compressed: bool) -> T {
     asset_from_contents(v, "n/a", compressed)
         .expect("data integrated in binary is never faulty, but make sure `compressed` is in sync!")
