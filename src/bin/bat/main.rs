@@ -15,7 +15,6 @@ use std::process;
 
 use ansi_term::Colour::Green;
 use ansi_term::Style;
-use bat::assets::get_acknowledgements;
 
 use crate::{
     app::App,
@@ -282,12 +281,6 @@ fn run() -> Result<bool> {
         return Ok(true);
     }
 
-    if app.matches.is_present("acknowledgements") {
-        let acknowledgements = bat::assets::get_acknowledgements();
-        println!("{}", acknowledgements);
-        return Ok(true);
-    }
-
     match app.matches.subcommand() {
         ("cache", Some(cache_matches)) => {
             // If there is a file named 'cache' in the current working directory,
@@ -330,6 +323,9 @@ fn run() -> Result<bool> {
                 Ok(true)
             } else if app.matches.is_present("cache-dir") {
                 writeln!(io::stdout(), "{}", cache_dir())?;
+                Ok(true)
+            } else if app.matches.is_present("acknowledgements") {
+                writeln!(io::stdout(), "{}", bat::assets::get_acknowledgements())?;
                 Ok(true)
             } else {
                 run_controller(inputs, &config)
