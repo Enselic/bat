@@ -28,7 +28,11 @@ See the LICENSE-APACHE and LICENSE-MIT files for license details.
             let contents = std::fs::read_to_string(Path::new(entry.path()))?;
             // Most license texts wrap at 80 chars so our horizontal divider is 80 chars
             acknowledgements.push_str("――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――\n");
+            acknowledgements.push_str(&format!("{:?}:\n", &entry.path()));
             acknowledgements.push_str(&contents);
+            if acknowledgements.chars().last().expect("string is not empty") != '\n' {
+                acknowledgements.push('\n');
+            }
         }
     }
 
