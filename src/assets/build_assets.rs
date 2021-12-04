@@ -25,7 +25,7 @@ pub fn build(
     write_assets(
         &theme_set,
         &syntax_set,
-        &acknowledgements,
+        acknowledgements.as_deref(),
         target_dir,
         current_version,
     )
@@ -158,12 +158,13 @@ fn write_assets(
         COMPRESS_SYNTAXES,
     )?;
     if let Some(acknowledgements) = acknowledgements {
-        asset_to_cache(
-            syntax_set,
-            &target_dir.join("acknowledgements.bin"),
-            "acknowledgements",
-            true,
-        )?;
+        std::fs::write(&target_dir.join("acknowledgements.bin"), acknowledgements)?;
+        // asset_to_cache(
+        //     acknowledgements,
+        //     ,
+        //     "acknowledgements",
+        //     true,
+        // )?;
     }
 
     print!(
