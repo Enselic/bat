@@ -115,6 +115,7 @@ dependencies = [
  "thiserror",
  "unicode-width",
  "wait-timeout",
+ "walkdir",
  "wild",
 ]
 

@@ -4,6 +4,8 @@ use syntect::parsing::{SyntaxSet, SyntaxSetBuilder};
 
 use crate::assets::*;
 
+mod acknowledgements;
+
 pub fn build(
     source_dir: &Path,
     include_integrated_assets: bool,
@@ -72,6 +74,57 @@ fn build_syntax_set_builder(
     }
 
     Ok(syntax_set_builder)
+}
+
+pub fn build_acknowledgements(
+    source_dir: &Path,
+    include_integrated_assets: bool,
+) -> Result<String> {
+    // Sourced from License section in README.md
+    let preamble = "Copyright (c) 2018-2021 bat-developers (https://github.com/sharkdp/bat).
+
+bat is made available under the terms of either the MIT License or the Apache License 2.0, at your option.
+
+See the LICENSE-APACHE and LICENSE-MIT files for license details.
+";
+
+    let acknowledgements = String::new();
+    acknowledgements.push_str(preamble);
+
+    // Sort entries so the order is stable over time
+    let dir_entries =
+        walkdir::WalkDir::new(source_dir).sort_by(|a, b| a.file_name().cmp(b.file_name()));
+    for dir_entry in dir_entries {
+        let dir_entry = dir_entry.map_err(|| Error::Msg("TODO"))?;
+        if dir_entry_is_license(&dir_entry) {
+            let syntax = load_syntax_file(dir_entry.path(), lines_include_newline)?;
+            if let Some(path_str) = dir_entry.path().to_str() {
+                // Split the path up and rejoin with slashes so that syntaxes loaded on Windows
+                // can still be loaded the same way.
+                let path = Path::new(path_str);
+                let path_parts: Vec<_> = path.iter().map(|c| c.to_str().unwrap()).collect();
+                self.path_syntaxes
+                    .push((path_parts.join("/").to_string(), self.syntaxes.len()));
+            }
+            self.syntaxes.push(syntax);
+        }
+
+        #[cfg(feature = "metadata")]
+        {
+            if entry.path().extension() == Some("tmPreferences".as_ref()) {
+                match RawMetadataEntry::load(entry.path()) {
+                    Ok(meta) => self.raw_metadata.add_raw(meta),
+                    Err(_err) => (),
+                }
+            }
+        }
+    }
+
+    return acknowledgements;
+}
+
+fn dir_entry_is_license(dir_entry: &walkdir::DirEntry) -> bool {
+    dir_entry.path().file_prefix()
 }
 
 fn print_unlinked_contexts(syntax_set: &SyntaxSet) {
