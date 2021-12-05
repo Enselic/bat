@@ -95,6 +95,9 @@ fn license_not_needed_in_acknowledgements(license_text: &str) -> bool {
     let markers = vec![
         // Public domain
         "This is free and unencumbered software released into the public domain.",
+
+        // Special license of assets/syntaxes/01_Packages/LICENSE
+        //"Permission to copy, use, modify, sell and distribute this software is granted. This software is provided \"as is\" without express or implied warranty, and with no claim as to its suitability for any purpose."
     ];
 
     license_contains_marker(license_text, &markers)
@@ -118,11 +121,11 @@ fn append_to_acknowledgements(acknowledgements: &mut String, license_text: &str)
     );
     acknowledgements.push_str(&license_text);
 
-    // Make sure the last char is a newline to not mess up formating
+    // Make sure the last char is a newline to not mess up formatting
     if acknowledgements
         .chars()
         .last()
-        .expect("string is not empty")
+        .expect("acknowledgements is not the empty string")
         != '\n'
     {
         acknowledgements.push('\n');
@@ -145,6 +148,7 @@ fn normalize_license_text(license_text: &str) -> String {
 
 #[cfg(test)]
 mod tests {
+    #[cfg(test)]
     use super::*;
 
     #[test]

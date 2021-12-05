@@ -171,13 +171,3 @@ fn asset_to_cache<T: serde::Serialize>(
     println!("okay");
     Ok(())
 }
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn entry_is_license() {
-        //assert!(dir_entry_is_license(walkdir::DirEntry::from_path))
-    }
-}
