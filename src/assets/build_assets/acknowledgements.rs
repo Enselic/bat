@@ -93,8 +93,9 @@ fn license_requires_attribution(license_text: &str) -> bool {
 all copies or substantial portions of the Software.",
     ];
 
+    let normalized_license_text = normalize_license_text(license_text);
     for marker in markers {
-        if license_text.contains(marker) {
+        if normalized_license_text.contains(marker) {
             return true;
         }
     }
