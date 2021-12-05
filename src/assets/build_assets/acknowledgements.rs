@@ -12,7 +12,7 @@ License 2.0, at your option.
 See the LICENSE-APACHE and LICENSE-MIT files for license details.
 ";
 
-/// Looks for LICENSE and NOTICE files in [source_dir], does some rudimentary
+/// Looks for LICENSE and NOTICE files in `source_dir`, does some rudimentary
 /// analysis, and compiles them together in a single string that is meant to be
 /// used in the output to `--acknowledgements`
 pub fn build_acknowledgements(
@@ -43,7 +43,7 @@ pub fn build_acknowledgements(
         handle_file(&mut acknowledgements, path, stem)?
     }
 
-    return Ok(Some(acknowledgements));
+    Ok(Some(acknowledgements))
 }
 
 fn handle_file(acknowledgements: &mut String, path: &Path, stem: &str) -> Result<()> {
@@ -109,8 +109,7 @@ fn license_contains_marker(license_text: &str, markers: &[&str]) -> bool {
             return true;
         }
     }
-
-    return false;
+    false
 }
 
 fn append_to_acknowledgements(acknowledgements: &mut String, license_text: &str) -> Result<()> {
@@ -118,9 +117,11 @@ fn append_to_acknowledgements(acknowledgements: &mut String, license_text: &str)
     acknowledgements.push_str(
         "――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――\n",
     );
-    acknowledgements.push_str(&license_text);
 
-    // Make sure the last char is a newline to not mess up formatting
+    // Now add the license text itself
+    acknowledgements.push_str(license_text);
+
+    // Make sure the last char is a newline to not mess up formatting later
     if acknowledgements
         .chars()
         .last()
