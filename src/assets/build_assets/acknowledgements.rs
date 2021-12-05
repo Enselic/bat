@@ -173,8 +173,26 @@ and we need to handle that.";
 
     #[test]
     fn test_append_to_acknowledgements_adds_newline_if_missing() {
-        let mut acknowledgements = "preamble\n";
-        append_to_acknowledgements(&mut acknowledgements, "line without newline");
-        assert_eq!("preamble\nline without newline\n", &acknowledgements);
+        let mut acknowledgements = "preamble\n".to_owned();
+
+        append_to_acknowledgements(&mut acknowledgements, "line without newline").unwrap();
+        assert_eq!(
+            "preamble
+――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――
+line without newline
+",
+            acknowledgements
+        );
+
+        append_to_acknowledgements(&mut acknowledgements, "line with newline\n").unwrap();
+        assert_eq!(
+            "preamble
+――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――
+line without newline
+――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――
+line with newline
+",
+            acknowledgements
+        );
     }
 }
