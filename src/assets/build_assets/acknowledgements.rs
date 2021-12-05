@@ -164,4 +164,16 @@ mod tests {
             normalize_license_text(license_text),
         );
     }
+
+    #[test]
+    fn test_normalize_license_text_with_windows_line_endings() {
+        let license_text = "This license text includes windows line endings\r
+and we need to handle that.";
+
+        assert_eq!(
+            "This license text includes windows line endings and we need to handle that."
+                .to_owned(),
+            normalize_license_text(license_text),
+        );
+    }
 }
