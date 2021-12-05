@@ -43,17 +43,32 @@ pub fn build(source_dir: &Path, include_integrated_assets: bool) -> Result<Optio
 
 fn handle_file(acknowledgements: &mut String, path: &Path, stem: &str) -> Result<()> {
     if stem == "NOTICE" {
-        // Assume NOTICE as defined by Apache License 2.0.
-        // These must be part of acknowledgements.
-        let license_text = std::fs::read_to_string(path)?;
-        append_to_acknowledgements(acknowledgements, &license_text);
+        handle_notice(acknowledgements, path)?;
     } else if stem.to_ascii_uppercase() == "LICENSE" {
-        let license_text = std::fs::read_to_string(path)?;
-        if license_requires_attribution(&license_text) {
-            append_to_acknowledgements(acknowledgements, &license_text);
-        } else {
-            println!("NOTE: Not adding '{:?}' to acknowledgements", path);
-        }
+        handle_license(acknowledgements, path)?;
+    }
+
+    Ok(())
+}
+
+fn handle_notice(acknowledgements: &mut String, path: &Path) -> Result<()> {
+    // Assume NOTICE as defined by Apache License 2.0.
+    // These must be part of acknowledgements.
+    let license_text = std::fs::read_to_string(path)?;
+    append_to_acknowledgements(acknowledgements, &license_text);
+
+    Ok(())
+}
+
+fn handle_license(acknowledgements: &mut String, path: &Path) -> Result<()> {
+    let license_text = std::fs::read_to_string(path)?;
+
+    if license_requires_attribution(&license_text) {
+        append_to_acknowledgements(acknowledgements, &license_text);
+    } else if license_not_needed_in_acknowledgements(&license_text) {
+        // Everything is OK
+    } else {
+        println!("NOTE: Not adding '{:?}' to acknowledgements", path);
     }
 
     Ok(())
@@ -90,7 +105,11 @@ fn license_requires_attribution(license_text: &str) -> bool {
         "The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.",
 
         // BSD
-        "Redistributions in binary form must reproduce the above copyright notice, list of conditions and the following disclaimer",
+        "Redistributions in binary form must reproduce the above copyright notice,",
+
+        // Apache 2.0
+        "Apache License Version 2.0, January 2004 http://www.apache.org/licenses/",
+        "Licensed under the Apache License, Version 2.0 (the \"License\");",
     ];
 
     let normalized_license_text = normalize_license_text(license_text);
