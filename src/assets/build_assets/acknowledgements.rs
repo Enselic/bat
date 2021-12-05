@@ -22,8 +22,12 @@ pub fn build(source_dir: &Path, include_integrated_assets: bool) -> Result<Optio
     // Sort entries so the order is stable over time
     let entries = walkdir::WalkDir::new(source_dir).sort_by(|a, b| a.path().cmp(b.path()));
     for entry in entries {
-        let path = entry.map(|e| e.path()).map_err(|e| format!("{}", e))?;
+        let entry = match entry {
+            Ok(entry) => entry,
+            Err(_) => continue,
+        };
 
+        let path = entry.path();
         let stem = match path.file_stem().and_then(|s| s.to_str()) {
             Some(stem) => stem,
             None => continue,
@@ -40,11 +44,11 @@ fn handle_file(acknowledgements: &mut String, path: &Path, stem: &str) -> Result
         // Assume NOTICE as defined by Apache License 2.0.
         // These must be part of acknowledgements.
         let license_text = std::fs::read_to_string(path)?;
-        append_to_acknowledgements(&mut acknowledgements, &license_text);
+        append_to_acknowledgements(acknowledgements, &license_text);
     } else if stem.to_ascii_uppercase() == "LICENSE" {
         let license_text = std::fs::read_to_string(path)?;
         if license_requires_attribution(&license_text) {
-            append_to_acknowledgements(&mut acknowledgements, &license_text);
+            append_to_acknowledgements(acknowledgements, &license_text);
         } else {
             println!("NOTE: Not adding '{:?}' to acknowledgements", path);
         }
