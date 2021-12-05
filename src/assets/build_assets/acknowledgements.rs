@@ -63,7 +63,6 @@ fn license_requires_attribution(license_text: &str) -> bool {
         // MIT
         "The above copyright notice and this permission notice shall be included in
 all copies or substantial portions of the Software.",
-
     ];
     for marker in markers {
         if license_text.contains(marker) {
@@ -73,4 +72,25 @@ all copies or substantial portions of the Software.",
     return false;
 }
 
+fn normalize_license_text(license_text: &str) -> String {
+    "foo".to_owned()
+}
+
 // TODO: Tests
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_normalize_license_text() {
+        let license_text = "This is a license text with these terms:
+ * Complicated multi-line
+   term with indentation";
+
+        assert_eq!(
+            "This is a license text with these terms: * Complicated multi-line term with indentation".to_owned(),
+            normalize_license_text(license_text),
+        );
+    }
+}
