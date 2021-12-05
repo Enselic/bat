@@ -23,23 +23,25 @@ See the LICENSE-APACHE and LICENSE-MIT files for license details.
     let entries =
         walkdir::WalkDir::new(source_dir).sort_by(|a, b| a.file_name().cmp(b.file_name()));
     for entry in entries {
-        let entry = entry.map_err(|e| Error::Msg(format!("{}", e)))?;
-        if dir_entry_is_license(&entry) {
-            let license_text = std::fs::read_to_string(Path::new(entry.path()))?;
+        let path = entry.map(|e| e.path()).map_err(|e| format!("{}", e))?;
+
+        let stem = match path.file_stem() {
+            Some("NOTICE") => stem,
+            Some("LICENSE") => stem,
+            None => continue,
+        };
+
+        let license_text = std::fs::read_to_string(path)?;
+
+        if stem == "NOTICE" {
+            // Assume NOTICE as defined by Apache License 2.0.
+            // These must be part of acknowledgements.
+            append_to_acknowledgements(&mut acknowledgements, &license_text);
+        } else if stem.to_ascii_uppercase() == "LICENSE" {
             if license_requires_attribution(&license_text) {
-                // Most license texts wrap at 80 chars so our horizontal divider is 80 chars
-                acknowledgements.push_str("――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――\n");
-                acknowledgements.push_str(&format!("{:?}:\n", &entry.path()));
-                acknowledgements.push_str(&license_text);
-                if acknowledgements
-                    .chars()
-                    .last()
-                    .expect("string is not empty")
-                    != '\n'
-                {
-                    acknowledgements.push('\n');
-                }
+                append_to_acknowledgements(&mut acknowledgements, &license_text);
             } else {
+                println!("NOTE: Not adding '{:?}' to acknowledgements", path);
             }
         }
     }
@@ -47,28 +49,45 @@ See the LICENSE-APACHE and LICENSE-MIT files for license details.
     return Ok(Some(acknowledgements));
 }
 
-fn dir_entry_is_license(entry: &walkdir::DirEntry) -> bool {
-    return if let Some(Some(stem)) = entry.path().file_stem().map(|s| s.to_str()) {
-        let uppercase_stem = stem.to_ascii_uppercase();
-        uppercase_stem == "LICENSE" || uppercase_stem == "NOTICE"
-    } else {
-        false
-    };
+fn append_to_acknowledgements(acknowledgements: &mut String, license_text: &str) {
+    // Most license texts wrap at 80 chars so our horizontal divider is 80 chars
+    acknowledgements.push_str("――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――\n");
+    acknowledgements.push_str(&license_text);
+    if acknowledgements
+        .chars()
+        .last()
+        .expect("string is not empty")
+        != '\n'
+    {
+        acknowledgements.push('\n');
+    }
 }
 
+// fn dir_entry_is_license(path: &Path) -> bool {
+//     return if let Some(Some(stem)) = path.file_stem().map(|s| s.to_str()) {
+//         let uppercase_stem = ;
+//         uppercase_stem == "LICENSE" || uppercase_stem == "NOTICE"
+//     } else {
+//         false
+//     };
+// }
+
 fn license_requires_attribution(license_text: &str) -> bool {
-    // TODO: Replace newline with ' '
     let markers = vec![
-        "Redistributions in binary form must reproduce the above",
+        // BSD-like TODO
+        "Redistributions in binary form must reproduce the above copyright notice",
+
         // MIT
         "The above copyright notice and this permission notice shall be included in
 all copies or substantial portions of the Software.",
     ];
+
     for marker in markers {
         if license_text.contains(marker) {
             return true;
         }
     }
+
     return false;
 }
 
