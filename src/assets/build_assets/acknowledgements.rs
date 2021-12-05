@@ -4,8 +4,7 @@ use std::path::Path;
 use crate::error::*;
 
 // Sourced from the License section in the README.md
-const PREAMBLE: &str = "
-Copyright (c) 2018-2021 bat-developers (https://github.com/sharkdp/bat).
+const PREAMBLE: &str = "Copyright (c) 2018-2021 bat-developers (https://github.com/sharkdp/bat).
 
 bat is made available under the terms of either the MIT License or the Apache
 License 2.0, at your option.
@@ -71,7 +70,7 @@ fn handle_license(acknowledgements: &mut String, path: &Path) -> Result<()> {
     } else if license_not_needed_in_acknowledgements(&license_text) {
         Ok(())
     } else {
-        Err(format!("ERROR: The license in this file is of unknown type: {:?}", path).into())
+        Err(format!("ERROR: License is of unknown type: {:?}", path).into())
     }
 }
 

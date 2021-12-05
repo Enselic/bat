@@ -299,7 +299,10 @@ pub(crate) fn get_integrated_themeset() -> ThemeSet {
 }
 
 pub fn get_acknowledgements() -> String {
-    from_binary(include_bytes!("../assets/acknowledgements.bin"), COMPRESS_ACKNOWLEDGEMENTS)
+    from_binary(
+        include_bytes!("../assets/acknowledgements.bin"),
+        COMPRESS_ACKNOWLEDGEMENTS,
+    )
 }
 
 pub(crate) fn from_binary<T: serde::de::DeserializeOwned>(v: &[u8], compressed: bool) -> T {
