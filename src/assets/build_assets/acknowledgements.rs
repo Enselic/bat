@@ -86,11 +86,11 @@ fn append_to_acknowledgements(acknowledgements: &mut String, license_text: &str)
 
 fn license_requires_attribution(license_text: &str) -> bool {
     let markers = vec![
-        // BSD-like TODO
-        "Redistributions in binary form must reproduce the above copyright notice",
         // MIT
-        "The above copyright notice and this permission notice shall be included in
-all copies or substantial portions of the Software.",
+        "The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.",
+
+        // BSD
+        "Redistributions in binary form must reproduce the above copyright notice, list of conditions and the following disclaimer",
     ];
 
     let normalized_license_text = normalize_license_text(license_text);
