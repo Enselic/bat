@@ -115,8 +115,8 @@ fn write_assets(
         "syntax set",
         COMPRESS_SYNTAXES,
     )?;
+
     if let Some(acknowledgements) = acknowledgements {
-        // works: std::fs::write(&target_dir.join("acknowledgements.bin"), acknowledgements)?;
         asset_to_cache(
             acknowledgements,
             &target_dir.join("acknowledgements.bin"),
