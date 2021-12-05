@@ -112,6 +112,19 @@ fn license_requires_attribution(license_text: &str) -> bool {
         "Licensed under the Apache License, Version 2.0 (the \"License\");",
     ];
 
+    license_contains_marker(license_text, &markers)
+}
+
+fn license_not_needed_in_acknowledgements(license_text: &str) -> bool {
+    let markers = vec![
+        // Public domain
+        "This is free and unencumbered software released into the public domain.",
+    ];
+
+    license_contains_marker(license_text, &markers)
+}
+
+fn license_contains_marker(license_text: &str, markers: &[&str]) -> bool {
     let normalized_license_text = normalize_license_text(license_text);
     for marker in markers {
         if normalized_license_text.contains(marker) {
