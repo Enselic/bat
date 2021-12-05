@@ -71,7 +71,7 @@ fn handle_license(acknowledgements: &mut String, path: &Path) -> Result<()> {
     } else if license_not_needed_in_acknowledgements(&license_text) {
         Ok(())
     } else {
-        Err(format!("ERROR: Unknown license: '{:?}'", path).into())
+        Err(format!("ERROR: The license in this file is of unknown type: {:?}", path).into())
     }
 }
 
@@ -97,7 +97,7 @@ fn license_not_needed_in_acknowledgements(license_text: &str) -> bool {
         "This is free and unencumbered software released into the public domain.",
 
         // Special license of assets/syntaxes/01_Packages/LICENSE
-        //"Permission to copy, use, modify, sell and distribute this software is granted. This software is provided \"as is\" without express or implied warranty, and with no claim as to its suitability for any purpose."
+        "Permission to copy, use, modify, sell and distribute this software is granted. This software is provided \"as is\" without express or implied warranty, and with no claim as to its suitability for any purpose."
     ];
 
     license_contains_marker(license_text, &markers)
