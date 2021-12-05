@@ -90,15 +90,6 @@ fn append_to_acknowledgements(acknowledgements: &mut String, license_text: &str)
     }
 }
 
-// fn dir_entry_is_license(path: &Path) -> bool {
-//     return if let Some(Some(stem)) = path.file_stem().map(|s| s.to_str()) {
-//         let uppercase_stem = ;
-//         uppercase_stem == "LICENSE" || uppercase_stem == "NOTICE"
-//     } else {
-//         false
-//     };
-// }
-
 fn license_requires_attribution(license_text: &str) -> bool {
     let markers = vec![
         // MIT
@@ -140,14 +131,12 @@ fn license_contains_marker(license_text: &str, markers: &[&str]) -> bool {
 fn normalize_license_text(license_text: &str) -> String {
     use regex::Regex;
 
-    let whitespace_and_newlines = Regex::new("\n").unwrap();
+    let whitespace_and_newlines = Regex::new(r"\s").unwrap();
     let as_single_line = whitespace_and_newlines.replace_all(license_text, " ");
 
-    let many_spaces = Regex::new(r" +").unwrap();
+    let many_spaces = Regex::new(" +").unwrap();
     many_spaces.replace_all(&as_single_line, " ").to_string()
 }
-
-// TODO: Tests
 
 #[cfg(test)]
 mod tests {
