@@ -25,33 +25,38 @@ See the LICENSE-APACHE and LICENSE-MIT files for license details.
     for entry in entries {
         let path = entry.map(|e| e.path()).map_err(|e| format!("{}", e))?;
 
-        let stem = match path.file_stem() {
-            Some("NOTICE") => stem,
-            Some("LICENSE") => stem,
+        let stem = match path.file_stem().map(|s| s.to_str()) {
+            Some(stem) => handle_file(path, stem)?,
             None => continue,
         };
-
-        let license_text = std::fs::read_to_string(path)?;
-
-        if stem == "NOTICE" {
-            // Assume NOTICE as defined by Apache License 2.0.
-            // These must be part of acknowledgements.
-            append_to_acknowledgements(&mut acknowledgements, &license_text);
-        } else if stem.to_ascii_uppercase() == "LICENSE" {
-            if license_requires_attribution(&license_text) {
-                append_to_acknowledgements(&mut acknowledgements, &license_text);
-            } else {
-                println!("NOTE: Not adding '{:?}' to acknowledgements", path);
-            }
-        }
     }
 
     return Ok(Some(acknowledgements));
 }
 
+fn handle_file(acknowledgements: &mut String, path: &Path, stem: &str) -> Result<()> {
+    if stem == "NOTICE" {
+        // Assume NOTICE as defined by Apache License 2.0.
+        // These must be part of acknowledgements.
+        let license_text = std::fs::read_to_string(path)?;
+        append_to_acknowledgements(&mut acknowledgements, &license_text);
+    } else if stem.to_ascii_uppercase() == "LICENSE" {
+        let license_text = std::fs::read_to_string(path)?;
+        if license_requires_attribution(&license_text) {
+            append_to_acknowledgements(&mut acknowledgements, &license_text);
+        } else {
+            println!("NOTE: Not adding '{:?}' to acknowledgements", path);
+        }
+    }
+
+    Ok(())
+}
+
 fn append_to_acknowledgements(acknowledgements: &mut String, license_text: &str) {
     // Most license texts wrap at 80 chars so our horizontal divider is 80 chars
-    acknowledgements.push_str("――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――\n");
+    acknowledgements.push_str(
+        "――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――\n",
+    );
     acknowledgements.push_str(&license_text);
     if acknowledgements
         .chars()
@@ -76,7 +81,6 @@ fn license_requires_attribution(license_text: &str) -> bool {
     let markers = vec![
         // BSD-like TODO
         "Redistributions in binary form must reproduce the above copyright notice",
-
         // MIT
         "The above copyright notice and this permission notice shall be included in
 all copies or substantial portions of the Software.",
