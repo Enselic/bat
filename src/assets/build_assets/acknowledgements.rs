@@ -1,8 +1,9 @@
+use std::fs::read_to_string;
 use std::path::Path;
 
 use crate::error::*;
 
-// Sourced from License section in README.md
+// Sourced from the License section in the README.md
 const PREAMBLE: &str = "
 Copyright (c) 2018-2021 bat-developers (https://github.com/sharkdp/bat).
 
@@ -12,8 +13,13 @@ License 2.0, at your option.
 See the LICENSE-APACHE and LICENSE-MIT files for license details.
 ";
 
-pub fn build(source_dir: &Path, include_integrated_assets: bool) -> Result<Option<String>> {
-    // TODO: Special flag --build-acknowledgements?
+/// Looks for LICENSE and NOTICE files in [source_dir], does some rudimentary
+/// analysis, and compiles them together in a single string that is meant to be
+/// used in the output to `--acknowledgements`
+pub fn build_acknowledgements(
+    source_dir: &Path,
+    include_integrated_assets: bool,
+) -> Result<Option<String>> {
     if include_integrated_assets {
         return Ok(None);
     }
@@ -52,45 +58,24 @@ fn handle_file(acknowledgements: &mut String, path: &Path, stem: &str) -> Result
 }
 
 fn handle_notice(acknowledgements: &mut String, path: &Path) -> Result<()> {
-    // Assume NOTICE as defined by Apache License 2.0.
-    // These must be part of acknowledgements.
-    let license_text = std::fs::read_to_string(path)?;
-    append_to_acknowledgements(acknowledgements, &license_text);
-
-    Ok(())
+    // Assume NOTICE as defined by Apache License 2.0. These must be part of acknowledgements.
+    let license_text = read_to_string(path)?;
+    append_to_acknowledgements(acknowledgements, &license_text)
 }
 
 fn handle_license(acknowledgements: &mut String, path: &Path) -> Result<()> {
-    let license_text = std::fs::read_to_string(path)?;
+    let license_text = read_to_string(path)?;
 
-    if license_requires_attribution(&license_text) {
-        append_to_acknowledgements(acknowledgements, &license_text);
+    if include_license_in_acknowledgments(&license_text) {
+        append_to_acknowledgements(acknowledgements, &license_text)
     } else if license_not_needed_in_acknowledgements(&license_text) {
-        // Everything is OK
+        Ok(())
     } else {
-        println!("NOTE: Not adding '{:?}' to acknowledgements", path);
-    }
-
-    Ok(())
-}
-
-fn append_to_acknowledgements(acknowledgements: &mut String, license_text: &str) {
-    // Most license texts wrap at 80 chars so our horizontal divider is 80 chars
-    acknowledgements.push_str(
-        "――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――\n",
-    );
-    acknowledgements.push_str(&license_text);
-    if acknowledgements
-        .chars()
-        .last()
-        .expect("string is not empty")
-        != '\n'
-    {
-        acknowledgements.push('\n');
+        Err(format!("ERROR: Unknown license: '{:?}'", path).into())
     }
 }
 
-fn license_requires_attribution(license_text: &str) -> bool {
+fn include_license_in_acknowledgments(license_text: &str) -> bool {
     let markers = vec![
         // MIT
         "The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.",
@@ -124,6 +109,26 @@ fn license_contains_marker(license_text: &str, markers: &[&str]) -> bool {
     }
 
     return false;
+}
+
+fn append_to_acknowledgements(acknowledgements: &mut String, license_text: &str) -> Result<()> {
+    // Most license texts wrap at 80 chars so our horizontal divider is 80 chars
+    acknowledgements.push_str(
+        "――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――\n",
+    );
+    acknowledgements.push_str(&license_text);
+
+    // Make sure the last char is a newline to not mess up formating
+    if acknowledgements
+        .chars()
+        .last()
+        .expect("string is not empty")
+        != '\n'
+    {
+        acknowledgements.push('\n');
+    }
+
+    Ok(())
 }
 
 /// Replaces newlines with a space character, and replaces multiple spaces with one space.
@@ -164,5 +169,12 @@ and we need to handle that.";
                 .to_owned(),
             normalize_license_text(license_text),
         );
+    }
+
+    #[test]
+    fn test_append_to_acknowledgements_adds_newline_if_missing() {
+        let mut acknowledgements = "preamble\n";
+        append_to_acknowledgements(&mut acknowledgements, "line without newline");
+        assert_eq!("preamble\nline without newline\n", &acknowledgements);
     }
 }

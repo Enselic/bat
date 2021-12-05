@@ -3,6 +3,7 @@ use syntect::highlighting::ThemeSet;
 use syntect::parsing::{SyntaxSet, SyntaxSetBuilder};
 
 use crate::assets::*;
+use acknowledgements::build_acknowledgements;
 
 mod acknowledgements;
 
@@ -18,7 +19,7 @@ pub fn build(
 
     let syntax_set = syntax_set_builder.build();
 
-    let acknowledgements = acknowledgements::build(source_dir, include_integrated_assets)?;
+    let acknowledgements = build_acknowledgements(source_dir, include_integrated_assets)?;
 
     print_unlinked_contexts(&syntax_set);
 
