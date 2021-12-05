@@ -74,9 +74,14 @@ all copies or substantial portions of the Software.",
 
 /// Replaces newlines with a space character, and replaces multiple spaces with one space.
 /// This makes the text easier to analyze.
-fn normalize_license_text(license_text: &str) -> Result<String> {
-    let multiple_spaces = regex::Regex::new(" +").map_err(|e| format!("{}", e))?;
-    multiple_spaces.replace(license_text.replace("\n", " "), " ")?
+fn normalize_license_text(license_text: &str) -> String {
+    use regex::Regex;
+
+    let whitespace_and_newlines = Regex::new("\n").unwrap();
+    let as_single_line = whitespace_and_newlines.replace_all(license_text, " ");
+
+    let many_spaces = Regex::new(r" +").unwrap();
+    many_spaces.replace_all(&as_single_line, " ").to_string()
 }
 
 // TODO: Tests
