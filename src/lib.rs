@@ -43,6 +43,7 @@ pub(crate) mod paging;
 mod preprocessor;
 mod pretty_printer;
 pub(crate) mod printer;
+mod read_until_with_limit;
 pub mod style;
 pub(crate) mod syntax_mapping;
 mod terminal;

@@ -251,7 +251,7 @@ pub(crate) struct InputReader<'a> {
 impl<'a> InputReader<'a> {
     fn new<R: BufRead + 'a>(mut reader: R) -> InputReader<'a> {
         let mut first_line = vec![];
-        reader.read_until(b'\n', &mut first_line).ok();
+        Self::limited_read_until(&mut reader, b'\n', &mut first_line).ok();
 
         let content_type = if first_line.is_empty() {
             None
@@ -260,7 +260,7 @@ impl<'a> InputReader<'a> {
         };
 
         if content_type == Some(ContentType::UTF_16LE) {
-            reader.read_until(0x00, &mut first_line).ok();
+            Self::limited_read_until(&mut reader, 0x00, &mut first_line).ok();
         }
 
         InputReader {
@@ -276,13 +276,21 @@ impl<'a> InputReader<'a> {
             return Ok(true);
         }
 
-        let res = self.inner.read_until(b'\n', buf).map(|size| size > 0)?;
+        let res = Self::limited_read_until(&mut self.inner, b'\n', buf).map(|size| size > 0)?;
 
         if self.content_type == Some(ContentType::UTF_16LE) {
-            let _ = self.inner.read_until(0x00, buf);
+            let _ = Self::limited_read_until(&mut self.inner, 0x00, buf);
         }
 
         Ok(res)
+    }
+
+    fn limited_read_until<R: BufRead + 'a>(
+        reader: &mut R,
+        delim: u8,
+        buf: &mut Vec<u8>,
+    ) -> io::Result<usize> {
+        crate::read_until_with_limit::read_until_with_limit(reader, delim, buf, 100_000)
     }
 }
 

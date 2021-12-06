@@ -1,4 +1,4 @@
-//! This file contains a pure copy of code from
+//! This file is based on code from
 //! <https://github.com/rust-lang/rust/blob/1.57.0/library/std/src/io/mod.rs>
 //! licensed under <https://github.com/rust-lang/rust/blob/1.57.0/LICENSE-MIT>
 //! which says:
@@ -28,8 +28,18 @@
 //! IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 //! DEALINGS IN THE SOFTWARE.
 //! ```
+//!
+//! To see the changes that has been made to the file you can run `git diff
+//! 766cfe1 -- src/read_until_with_limit.rs`.
 
-fn read_until<R: BufRead + ?Sized>(r: &mut R, delim: u8, buf: &mut Vec<u8>) -> Result<usize> {
+use std::io::{BufRead, Error, ErrorKind, Result};
+
+pub(crate) fn read_until_with_limit<R: BufRead + ?Sized>(
+    r: &mut R,
+    delim: u8,
+    buf: &mut Vec<u8>,
+    limit: usize,
+) -> Result<usize> {
     let mut read = 0;
     loop {
         let (done, used) = {
@@ -38,7 +48,7 @@ fn read_until<R: BufRead + ?Sized>(r: &mut R, delim: u8, buf: &mut Vec<u8>) -> R
                 Err(ref e) if e.kind() == ErrorKind::Interrupted => continue,
                 Err(e) => return Err(e),
             };
-            match memchr::memchr(delim, available) {
+            match available.iter().position(|b| *b == delim) {
                 Some(i) => {
                     buf.extend_from_slice(&available[..=i]);
                     (true, i + 1)
@@ -51,6 +61,13 @@ fn read_until<R: BufRead + ?Sized>(r: &mut R, delim: u8, buf: &mut Vec<u8>) -> R
         };
         r.consume(used);
         read += used;
+        if read > limit {
+            let bat_error = crate::error::Error::Msg(format!(
+                "Lines longer than {} bytes are not supported. Try auto-formatting your file first.",
+                limit
+            ));
+            return Err(Error::new(ErrorKind::Other, bat_error));
+        }
         if done || used == 0 {
             return Ok(read);
         }

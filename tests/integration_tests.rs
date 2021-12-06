@@ -344,6 +344,18 @@ fn no_args_doesnt_break() {
     assert!(exit_status.success());
 }
 
+#[cfg(unix)]
+#[test]
+fn dev_zero() {
+    bat()
+        .arg("/dev/zero")
+        .assert()
+        .failure()
+        .stderr(predicate::str::contains(
+            "Lines longer than 100000 bytes are not supported. Try auto-formatting your file first",
+        ));
+}
+
 #[test]
 fn tabs_numbers() {
     bat()
