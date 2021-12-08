@@ -258,6 +258,15 @@ impl<'a> InteractivePrinter<'a> {
         *cursor += text.len();
         text.to_string()
     }
+
+    fn handle_ansi_escape_passthrough(
+        &mut self,
+        handle: &mut dyn Write,
+        ansi: &str,
+    ) -> std::io::Result<()> {
+        self.ansi_style.update(ansi);
+        write!(handle, "{}", ansi)
+    }
 }
 
 impl<'a> Printer for InteractivePrinter<'a> {
@@ -448,11 +457,7 @@ impl<'a> Printer for InteractivePrinter<'a> {
                 let ansi_iterator = AnsiCodeIterator::new(region);
                 for chunk in ansi_iterator {
                     match chunk {
-                        // ANSI escape passthrough.
-                        (ansi, true) => {
-                            self.ansi_style.update(ansi);
-                            write!(handle, "{}", ansi)?;
-                        }
+                        (ansi, true) => self.handle_ansi_escape_passthrough(handle, ansi)?,
 
                         // Regular text.
                         (text, false) => {
@@ -501,11 +506,7 @@ impl<'a> Printer for InteractivePrinter<'a> {
                 let ansi_iterator = AnsiCodeIterator::new(region);
                 for chunk in ansi_iterator {
                     match chunk {
-                        // ANSI escape passthrough.
-                        (ansi, true) => {
-                            self.ansi_style.update(ansi);
-                            write!(handle, "{}", ansi)?;
-                        }
+                        (ansi, true) => self.handle_ansi_escape_passthrough(handle, ansi)?,
 
                         // Regular text.
                         (text, false) => {
