@@ -267,6 +267,22 @@ impl<'a> InteractivePrinter<'a> {
         self.ansi_style.update(ansi);
         write!(handle, "{}", ansi)
     }
+
+    fn as_terminal_escaped(
+        &self,
+        style: syntect::highlighting::Style,
+        background_color: Option<syntect::highlighting::Color>,
+        text: &str,
+    ) -> String {
+        as_terminal_escaped(
+            style,
+            &format!("{}{}", self.ansi_style, text),
+            self.config.true_color,
+            self.config.colored_output,
+            self.config.use_italic_text,
+            background_color,
+        )
+    }
 }
 
 impl<'a> Printer for InteractivePrinter<'a> {
@@ -449,10 +465,6 @@ impl<'a> Printer for InteractivePrinter<'a> {
 
         // Line contents.
         if matches!(self.config.wrapping_mode, WrappingMode::NoWrapping(_)) {
-            let true_color = self.config.true_color;
-            let colored_output = self.config.colored_output;
-            let italics = self.config.use_italic_text;
-
             for &(style, region) in &regions {
                 let ansi_iterator = AnsiCodeIterator::new(region);
                 for chunk in ansi_iterator {
@@ -467,20 +479,16 @@ impl<'a> Printer for InteractivePrinter<'a> {
                             write!(
                                 handle,
                                 "{}",
-                                as_terminal_escaped(
-                                    style,
-                                    &format!("{}{}", self.ansi_style, text_trimmed),
-                                    true_color,
-                                    colored_output,
-                                    italics,
-                                    background_color
-                                )
+                                self.as_terminal_escaped(style, background_color, text_trimmed,)
                             )?;
 
                             if text.len() != text_trimmed.len() {
                                 if let Some(background_color) = background_color {
                                     let ansi_style = Style {
-                                        background: to_ansi_color(background_color, true_color),
+                                        background: to_ansi_color(
+                                            background_color,
+                                            self.config.true_color,
+                                        ),
                                         ..Default::default()
                                     };
 
@@ -553,13 +561,10 @@ impl<'a> Printer for InteractivePrinter<'a> {
                                     write!(
                                         handle,
                                         "{}\n{}",
-                                        as_terminal_escaped(
+                                        self.as_terminal_escaped(
                                             style,
-                                            &format!("{}{}", self.ansi_style, line_buf),
-                                            self.config.true_color,
-                                            self.config.colored_output,
-                                            self.config.use_italic_text,
-                                            background_color
+                                            background_color,
+                                            &line_buf,
                                         ),
                                         panel_wrap.clone().unwrap()
                                     )?;
@@ -579,14 +584,7 @@ impl<'a> Printer for InteractivePrinter<'a> {
                             write!(
                                 handle,
                                 "{}",
-                                as_terminal_escaped(
-                                    style,
-                                    &format!("{}{}", self.ansi_style, line_buf),
-                                    self.config.true_color,
-                                    self.config.colored_output,
-                                    self.config.use_italic_text,
-                                    background_color
-                                )
+                                self.as_terminal_escaped(style, background_color, &line_buf)
                             )?;
                         }
                     }
