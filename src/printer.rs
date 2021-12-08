@@ -461,7 +461,7 @@ impl<'a> Printer for InteractivePrinter<'a> {
 
                         // Regular text.
                         (text, false) => {
-                            let text = &*self.preprocess(text, &mut cursor_total);
+                            let text = self.preprocess(text, &mut cursor_total);
                             let text_trimmed = text.trim_end_matches(|c| c == '\r' || c == '\n');
 
                             write!(
@@ -555,7 +555,7 @@ impl<'a> Printer for InteractivePrinter<'a> {
                                         "{}\n{}",
                                         as_terminal_escaped(
                                             style,
-                                            &*format!("{}{}", self.ansi_style, line_buf),
+                                            &format!("{}{}", self.ansi_style, line_buf),
                                             self.config.true_color,
                                             self.config.colored_output,
                                             self.config.use_italic_text,
@@ -581,7 +581,7 @@ impl<'a> Printer for InteractivePrinter<'a> {
                                 "{}",
                                 as_terminal_escaped(
                                     style,
-                                    &*format!("{}{}", self.ansi_style, line_buf),
+                                    &format!("{}{}", self.ansi_style, line_buf),
                                     self.config.true_color,
                                     self.config.colored_output,
                                     self.config.use_italic_text,
