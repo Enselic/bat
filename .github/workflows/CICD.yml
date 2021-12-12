@@ -75,36 +75,24 @@ jobs:
         toolchain: stable
         default: true
         profile: minimal
-    - name: Build and install bat
-      uses: actions-rs/cargo@v1
-      with:
-        command: install
-        args: --locked --path .
+    - name: Build bat to build assets
+      run: cargo build
     - name: Rebuild binary assets (syntaxes and themes)
-      run: bash assets/create.sh
-    - name: Build and install bat with updated assets
-      uses: actions-rs/cargo@v1
-      with:
-        command: install
-        args: --locked --path .
+      run: PATH="./target/debug:$PATH" assets/create.sh
+    - name: Build bat with updated assets
+      run: cargo build
     - name: Run unit tests with new syntaxes and themes
-      uses: actions-rs/cargo@v1
-      with:
-        command: test
-        args: --locked --release
+      run: cargo test --locked
     - name: Run ignored-by-default unit tests with new syntaxes and themes
-      uses: actions-rs/cargo@v1
-      with:
-        command: test
-        args: --locked --release -- --ignored
+      run: cargo test --locked -- --ignored
     - name: Syntax highlighting regression test
-      run: tests/syntax-tests/regression_test.sh
+      run: PATH="./target/debug:$PATH" tests/syntax-tests/regression_test.sh
     - name: List of languages
       run: bat --list-languages
     - name: List of themes
       run: bat --list-themes
     - name: Test custom assets
-      run: tests/syntax-tests/test_custom_assets.sh
+      run: PATH="./target/debug:$PATH" tests/syntax-tests/test_custom_assets.sh
 
   documentation:
     name: Documentation
