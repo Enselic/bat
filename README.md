@@ -28,7 +28,7 @@ A special *thank you* goes to our biggest <a href="doc/sponsors.md">sponsors</a>
 
   <p style="margin-bottom: 0em"><strong>Your app, enterprise-ready.</strong></p>
 
-  <p style="font-size: 60%; margin-top: 0.5em">
+  <p style="font-size: 20%; margin-top: 0.5em">
   Start selling to enterprise customers with just a few lines of code.
   <br>
   Add Single Sign-On (and more) in minutes instead of months.
