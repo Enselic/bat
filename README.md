@@ -21,15 +21,18 @@
 
 ### Sponsors
 
-A special *thank you* goes to our biggest <a href="doc/sponsors.md">sponsors</a>:<br>
+A special *thank you* goes to our biggest <a href="doc/sponsors.md">sponsors</a>:
+
 <a href="https://workos.com/?utm_campaign=github_repo&utm_medium=referral&utm_content=bat&utm_source=github">
   <img src="doc/sponsors/workos-logo-white-bg.svg" width="200" alt="WorkOS">
+
+  <p style="margin-bottom: 0em"><strong>Your app, enterprise-ready.</strong></p>
+
+  <p style="font-size: 80%; margin-top: 0.5em">
+  Start selling to enterprise customers with just a few lines of code.
   <br>
-  <strong>Your app, enterprise-ready.</strong>
-  <br>
-  <sub>Start selling to enterprise customers with just a few lines of code.</sub>
-  <br>
-  <sup>Add Single Sign-On (and more) in minutes instead of months.</sup>
+  Add Single Sign-On (and more) in minutes instead of months.
+  </p>
 </a>
 
 ### Syntax highlighting
