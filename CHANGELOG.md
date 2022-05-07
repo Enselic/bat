@@ -15,7 +15,7 @@
 ## Performance
 
 - Skip syntax highlighting on long lines (> 16384 chars) to help improve performance. See #2165 (@keith-hall)
-- Vastly improve startup time by lazy-loading syntaxes via syntect 5.0.0. This makes bat display small files XX% faster than before. See #951, #2181 (@Enselic)
+- Vastly improve startup time by lazy-loading syntaxes via syntect 5.0.0. This makes bat display small files 75% faster than before. See #951, #2181 (@Enselic)
 
 ## Other
 
