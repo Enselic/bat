@@ -326,6 +326,18 @@ fn run() -> Result<bool> {
             } else if app.matches.is_present("config-file") {
                 println!("{}", config_file().to_string_lossy());
                 Ok(true)
+            } else if app.matches.is_present("dump-syntax-set-as-json")
+                || app.matches.is_present("dump-theme-set-as-json")
+            {
+                let assets = assets_from_cache_or_binary(config.use_custom_assets)?;
+                if app.matches.is_present("dump-syntax-set-as-json") {
+                    let syntax_set = assets.get_syntax_set()?;
+                    println!("{}", serde_yaml::to_string(&syntax_set)?);
+                } else if app.matches.is_present("dump-theme-set-as-json") {
+                    let theme_set = assets.get_theme("Monokai Extended");
+                    println!("{}", serde_yaml::to_string(&theme_set)?);
+                }
+                Ok(true)
             } else if app.matches.is_present("generate-config-file") {
                 generate_config_file()?;
                 Ok(true)
