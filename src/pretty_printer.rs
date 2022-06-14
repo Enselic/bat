@@ -2,9 +2,15 @@ use std::io::Read;
 use std::path::Path;
 
 use console::Term;
-use syntect::parsing::SyntaxReference;
 
-use crate::{
+pub struct Syntax {
+    pub name: String,
+    pub file_extensions: Vec<String>,
+    pub first_line_match: Option<String>,
+    pub hidden: bool,
+}
+
+use bat_impl::{
     assets::HighlightingAssets,
     config::{Config, VisibleLines},
     controller::Controller,
@@ -16,7 +22,7 @@ use crate::{
 };
 
 #[cfg(feature = "paging")]
-use crate::paging::PagingMode;
+use bat_impl::paging::PagingMode;
 
 #[derive(Default)]
 struct ActiveStyleComponents {
@@ -240,10 +246,15 @@ impl<'a> PrettyPrinter<'a> {
         self.assets.themes()
     }
 
-    pub fn syntaxes(&self) -> impl Iterator<Item = &SyntaxReference> {
+    pub fn syntaxes(&self) -> impl Iterator<Item = Syntax> + '_ {
         // We always use assets from the binary, which are guaranteed to always
         // be valid, so get_syntaxes() can never fail here
-        self.assets.get_syntaxes().unwrap().iter()
+        self.assets.get_syntaxes().unwrap().iter().map(|s| Syntax {
+            name: s.name.clone(),
+            file_extensions: s.file_extensions.clone(),
+            first_line_match: s.first_line_match.clone(),
+            hidden: s.hidden.clone(),
+        })
     }
 
     /// Pretty-print all specified inputs. This method will "use" all stored inputs.

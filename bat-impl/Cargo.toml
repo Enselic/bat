@@ -1,0 +1,53 @@
+[package]
+authors = ["David Peter <mail@david-peter.de>"]
+description = "Implementation detail of bat."
+homepage = "https://github.com/sharkdp/bat"
+license = "MIT/Apache-2.0"
+name = "bat-impl"
+repository = "https://github.com/sharkdp/bat"
+version = "0.0.21"
+edition = '2018'
+
+[features]
+default = ["regex-onig", "paging"]
+git = ["git2"] # Support indicating git modifications
+paging = ["shell-words", "grep-cli"] # Support applying a pager on the output
+build-assets = ["syntect/yaml-load", "syntect/plist-load", "regex", "walkdir"]
+
+# You need to use one of these if you depend on bat as a library:
+regex-onig = ["syntect/regex-onig"] # Use the "oniguruma" regex engine
+regex-fancy = ["syntect/regex-fancy"] # Use the rust-only "fancy-regex" engine
+
+[dependencies]
+ansi_term = "^0.12.1"
+ansi_colours = "^1.1"
+bincode = "1.0"
+console = "0.15.0"
+flate2 = "1.0"
+once_cell = "1.12"
+thiserror = "1.0"
+content_inspector = "0.2.4"
+encoding = "0.2"
+shell-words = { version = "1.1.0", optional = true }
+unicode-width = "0.1.9"
+globset = "0.4"
+serde = { version = "1.0", features = ["derive"] }
+serde_yaml = "0.8"
+semver = "1.0"
+path_abs = { version = "0.5", default-features = false }
+clircle = "0.3"
+dirs-next = { version = "2.0.0", optional = true }
+grep-cli = { version = "0.1.6", optional = true }
+regex = { version = "1.5.6", optional = true }
+walkdir = { version = "2.0", optional = true }
+bytesize = { version = "1.1.0" }
+
+[dependencies.git2]
+version = "0.14"
+optional = true
+default-features = false
+
+[dependencies.syntect]
+version = "5.0.0"
+default-features = false
+features = ["parsing"]

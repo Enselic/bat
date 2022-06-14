@@ -1,4 +1,5 @@
 /target/
+/bat-impl/target/
 **/*.rs.bk
 
 # Generated files

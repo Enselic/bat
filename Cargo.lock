@@ -76,14 +76,34 @@ checksum = "904dfeac50f3cdaba28fc6f57fdcddb75f49ed61346676a78c4ffe55877802fd"
 name = "bat"
 version = "0.21.0"
 dependencies = [
- "ansi_colours",
  "ansi_term",
  "assert_cmd",
  "atty",
- "bincode",
+ "bat-impl",
  "bugreport",
- "bytesize",
  "clap",
+ "console",
+ "dirs-next",
+ "globset",
+ "grep-cli",
+ "nix",
+ "once_cell",
+ "predicates",
+ "serial_test",
+ "shell-words",
+ "tempfile",
+ "wait-timeout",
+ "wild",
+]
+
+[[package]]
+name = "bat-impl"
+version = "0.0.21"
+dependencies = [
+ "ansi_colours",
+ "ansi_term",
+ "bincode",
+ "bytesize",
  "clircle",
  "console",
  "content_inspector",
@@ -93,23 +113,17 @@ dependencies = [
  "git2",
  "globset",
  "grep-cli",
- "nix",
  "once_cell",
  "path_abs",
- "predicates",
  "regex",
  "semver",
  "serde",
  "serde_yaml",
- "serial_test",
  "shell-words",
  "syntect",
- "tempfile",
  "thiserror",
  "unicode-width",
- "wait-timeout",
  "walkdir",
- "wild",
 ]
 
 [[package]]
@@ -166,9 +180,9 @@ dependencies = [
 
 [[package]]
 name = "bytemuck"
-version = "1.7.3"
+version = "1.9.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "439989e6b8c38d1b6570a384ef1e49c8848128f5a97f3914baef02920842712f"
+checksum = "cdead85bdec19c194affaeeb670c0e41fe23de31459efd1c174d049269cf02cc"
 
 [[package]]
 name = "bytesize"
@@ -907,9 +921,9 @@ dependencies = [
 
 [[package]]
 name = "rgb"
-version = "0.8.31"
+version = "0.8.32"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9a374af9a0e5fdcdd98c1c7b64f05004f9ea2555b6c75f211daa81268a3c50f1"
+checksum = "e74fdc210d8f24a7dbfedc13b04ba5764f5232754ccebfdf5fff1bad791ccbc6"
 dependencies = [
  "bytemuck",
 ]

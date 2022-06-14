@@ -14,7 +14,7 @@ use clap::ArgMatches;
 use console::Term;
 
 use crate::input::{new_file_input, new_stdin_input};
-use bat::{
+use bat_impl::{
     assets::HighlightingAssets,
     bat_warning,
     config::{Config, VisibleLines},

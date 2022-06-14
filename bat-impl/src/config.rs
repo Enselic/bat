@@ -88,7 +88,7 @@ pub struct Config<'a> {
     pub use_custom_assets: bool,
 }
 
-#[cfg(all(feature = "minimal-application", feature = "paging"))]
+#[cfg(feature = "paging")]
 pub fn get_pager_executable(config_pager: Option<&str>) -> Option<String> {
     crate::pager::get_pager(config_pager)
         .ok()

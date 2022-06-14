@@ -1,4 +1,4 @@
-use bat::input::Input;
+use bat_impl::input::Input;
 use std::path::Path;
 
 pub fn new_file_input<'a>(file: &'a Path, name: Option<&'a Path>) -> Input<'a> {

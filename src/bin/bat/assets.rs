@@ -6,9 +6,9 @@ use clap::crate_version;
 
 use crate::directories::PROJECT_DIRS;
 
-use bat::assets::HighlightingAssets;
-use bat::assets_metadata::AssetsMetadata;
-use bat::error::*;
+use bat_impl::assets::HighlightingAssets;
+use bat_impl::assets_metadata::AssetsMetadata;
+use bat_impl::error::*;
 
 pub fn config_dir() -> Cow<'static, str> {
     PROJECT_DIRS.config_dir().to_string_lossy()

@@ -3,10 +3,11 @@
 //! The main struct of this crate is `PrettyPrinter` which can be used to
 //! configure and run the syntax highlighting.
 //!
-//! If you need more control, you can also use the structs in the submodules
-//! (start with `controller::Controller`), but note that the API of these
-//! internal modules is much more likely to change. Some or all of these
-//! modules might be removed in the future.
+//! If you need more control, you can instead use the
+//! [`bat-impl`](https://docs.rs/bat-impl/latest/bat_impl/) crate (start with
+//! [`controller::Controller`](https://docs.rs/bat-impl/latest/bat_impl/controller/struct.Controller.html)),
+//! but note that the API of these internal modules is much more likely to
+//! change. Some or all of these modules might be removed in the future.
 //!
 //! "Hello world" example:
 //! ```
@@ -21,37 +22,8 @@
 
 #![deny(unsafe_code)]
 
-mod macros;
-
-pub mod assets;
-pub mod assets_metadata {
-    pub use super::assets::assets_metadata::*;
-}
-pub mod config;
-pub mod controller;
-mod decorations;
-mod diff;
-pub mod error;
-pub mod input;
-mod less;
-pub mod line_range;
-mod output;
-#[cfg(feature = "paging")]
-mod pager;
-#[cfg(feature = "paging")]
-pub(crate) mod paging;
-mod preprocessor;
 mod pretty_printer;
-pub(crate) mod printer;
-pub mod style;
-pub(crate) mod syntax_mapping;
-mod terminal;
-mod vscreen;
-pub(crate) mod wrapping;
-
 pub use pretty_printer::{Input, PrettyPrinter};
-pub use syntax_mapping::{MappingTarget, SyntaxMapping};
-pub use wrapping::WrappingMode;
 
 #[cfg(feature = "paging")]
-pub use paging::PagingMode;
+pub use bat_impl::PagingMode;

@@ -25,7 +25,7 @@ use assets::{assets_from_cache_or_binary, cache_dir, clear_assets, config_dir};
 use directories::PROJECT_DIRS;
 use globset::GlobMatcher;
 
-use bat::{
+use bat_impl::{
     config::Config,
     controller::Controller,
     error::*,
@@ -47,7 +47,7 @@ fn build_assets(matches: &clap::ArgMatches) -> Result<()> {
         .map(Path::new)
         .unwrap_or_else(|| PROJECT_DIRS.cache_dir());
 
-    bat::assets::build(
+    bat_impl::assets::build(
         source_dir,
         !matches.is_present("blank"),
         matches.is_present("acknowledgements"),
@@ -227,7 +227,7 @@ fn run_controller(inputs: Vec<Input>, config: &Config) -> Result<bool> {
 #[cfg(feature = "bugreport")]
 fn invoke_bugreport(app: &App) {
     use bugreport::{bugreport, collector::*, format::Markdown};
-    let pager = bat::config::get_pager_executable(app.matches.value_of("pager"))
+    let pager = bat_impl::config::get_pager_executable(app.matches.value_of("pager"))
         .unwrap_or_else(|| "less".to_owned()); // FIXME: Avoid non-canonical path to "less".
 
     let mut custom_assets_metadata = PROJECT_DIRS.cache_dir().to_path_buf();
@@ -336,7 +336,7 @@ fn run() -> Result<bool> {
                 writeln!(io::stdout(), "{}", cache_dir())?;
                 Ok(true)
             } else if app.matches.is_present("acknowledgements") {
-                writeln!(io::stdout(), "{}", bat::assets::get_acknowledgements())?;
+                writeln!(io::stdout(), "{}", bat_impl::assets::get_acknowledgements())?;
                 Ok(true)
             } else {
                 run_controller(inputs, &config)
