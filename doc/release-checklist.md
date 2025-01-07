@@ -12,13 +12,13 @@
 
 ## CHANGELOG.md updates
 
-- [ ] Go to https://github.com/sharkdp/bat/releases/new, click "Choose a tag",
-  type the name of the tag that will be created later, click "Generate release
-  notes". DO NOT ACTUALLY CREATE ANY RELEASE IN THIS STEP.
-- [ ] Compare current `CHANGELOG.md` with auto-generated release notes and add
+- [ ] Compare current `CHANGELOG.md` against
+  `tag=$(git tag --sort=-creatordate | grep ^v | head -n1) ; git diff $tag` and add
   missing entries. Expect in particular dependabot PRs to not be in
   `CHANGELOG.md` since they are [auto-merged] if CI passes.
 - [ ] Introduce a section for the new release and perform final touch-ups.
+  The GitHub Release notes will be taken from `CHANGELOG.md` with the
+  `parse-changelog` crate.
 
 ## Update syntaxes and themes (build assets)
 
@@ -41,22 +41,26 @@
       this, install the latest `bat` version again (to include the new syntaxes
       and themes).
 - [ ] Run `cargo publish --dry-run` to make sure that it will
-      succeed later (after creating the GitHub release).
+      succeed later.
 
 ## Release
 
-- [ ] Create a tag and push it: `git tag vX.Y.Z; git push origin tag vX.Y.Z`.
-      This will trigger the deployment via GitHub Actions.
-      REMINDER: If your `origin` is a fork, don't forget to push to e.g. `upstream` instead!
-- [ ] Go to https://github.com/sharkdp/bat/releases/new to create the new
-      release. Select the new tag and also use it as the release title. For the
-      release notes, copy the corresponding section from `CHANGELOG.md` and
-      possibly add additional remarks for package maintainers.
-      Publish the release.
+1. Run https://github.com/sharkdp/bat/actions/workflows/Release.yml workflow from `main` ([instructions](#how-to-trigger-main-branch-workflow))
+1. Done!
+
+TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO 
+HOW TO FIX? Parameterize IS_RELEASE on CICD.yml and set from calling workflow?
 - [ ] Check if the binary deployment works (archives and Debian packages should
       appear when the CI run for the Git tag has finished).
-- [ ] Publish to crates.io by running `cargo publish` in a *clean* repository.
-      The safest way to do this is to clone a fresh copy.
+TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO 
+
+### How to trigger main branch workflow
+
+1. Go to https://github.com/cargo-public-api/cargo-public-api/actions and select workflow in the left column
+1. Click the **Run workflow ▼** button to the right
+1. Make sure the `main` branch is selected
+1. Click **Run workflow**
+1. Wait for the workflow to complete
 
 ## Post-release
 
